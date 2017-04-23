@@ -9,8 +9,8 @@
  * @type ChangeSet
  */
 
-import jq from 'json-query'
 import _ from 'lodash'
+import _f from 'lodash/fp'
 import * as Node from './node'
 import * as Edge from './edge'
 import * as Component from './component'
@@ -120,36 +120,57 @@ export function isChangeSet (changeSet) {
 const applySetKey = (r, key, value) => {
   const v = _.get(r, key)
   if (typeof (v) === 'object' && typeof (value) === 'object') {
-    _.set(r, key, _.merge(_.get(r, key), value))
+    return _f.set(key, _.merge(_.get(r, key), value), r)
   } else {
-    _.set(r, key, value)
+    return _f.set(key, value, r)
   }
-  return r
 }
 
 const applyMergeByPath = (graph, path, value) => {
   var idx = _.findIndex(graph.nodes, Node.equal(path[0]))
   if (path.length === 1) {
     if (idx > -1) {
-      _.merge(graph.nodes[idx], value)
-      return // in place method no return value
+      return {
+        ...graph,
+        nodes: graph.nodes.map((i, itemIdx) => {
+          if (idx === itemIdx) return _f.merge(i, value)
+          return i
+        })
+      }
     }
   } else {
     if (idx > -1 && (hasChildren(graph.nodes[idx]))) {
-      applyMergeByPath(graph.nodes[idx], path.slice(1), value)
-      return // in place method no return value
+      return {
+        ...graph,
+        nodes: graph.nodes.map((i, itemIdx) => {
+          if (idx === itemIdx) return applyMergeByPath(i, path.slice(1), value)
+          return i
+        })
+      }
     }
   }
 }
 
 const applyMergeByComponent = (graph, cId, value) => {
   var idx = _.findIndex(graph.components, (c) => Component.id(c) === cId)
-  return _.merge(graph.components[idx], value)
+  return {
+    ...graph,
+    components: graph.components.map((c, cIdx) => {
+      if (idx === cIdx) return _f.merge(c, value)
+      return c
+    })
+  }
 }
 
 const applyMergeByEdge = (graph, edge, value) => {
   var idx = _.findIndex(graph.edges, (e) => Edge.equal(edge, e))
-  return _.merge(graph.edges[idx], value)
+  return {
+    ...graph,
+    edges: graph.edges.map((e, eIdx) => {
+      if (idx === eIdx) return _f.merge(e, value)
+      return e
+    })
+  }
 }
 
 /**
@@ -160,8 +181,8 @@ const applyMergeByEdge = (graph, edge, value) => {
  * @throws {Error} If the change set is no valid change set it throws an error.
  */
 export function applyChangeSet (graph, changeSet) {
-  var newGraph = _.cloneDeep(graph)
-  return applyChangeSetInplace(newGraph, changeSet)
+  // var newGraph = _.cloneDeep(graph)
+  return applyChangeSetInplace(graph, changeSet)
 }
 
 /**
@@ -172,8 +193,8 @@ export function applyChangeSet (graph, changeSet) {
  * @throws {Error} If the change set is no valid change set it throws an error.
  */
 export function applyChangeSets (graph, changeSets) {
-  var newGraph = _.cloneDeep(graph)
-  return changeSets.reduce((g, c) => applyChangeSetInplace(g, c), newGraph)
+  // var newGraph = _.cloneDeep(graph)
+  return changeSets.reduce((g, c) => applyChangeSetInplace(g, c), graph)
 }
 
 /**
@@ -187,14 +208,11 @@ export function applyChangeSetInplace (graph, changeSet) {
   if (!isChangeSet(changeSet)) {
     throw new Error('Cannot apply non-ChangeSet ' + JSON.stringify(changeSet))
   } else if (changeSet.operation === 'mergePath') {
-    applyMergeByPath(graph, changeSet.query, changeSet.value)
-    return graph
+    return applyMergeByPath(graph, changeSet.query, changeSet.value)
   } else if (changeSet.operation === 'mergeComponent') {
-    applyMergeByComponent(graph, changeSet.query, changeSet.value)
-    return graph
+    return applyMergeByComponent(graph, changeSet.query, changeSet.value)
   } else if (changeSet.operation === 'mergeEdge') {
-    applyMergeByEdge(graph, changeSet.query, changeSet.value)
-    return graph
+    return applyMergeByEdge(graph, changeSet.query, changeSet.value)
   } else if (changeSet.operation === 'insert') {
     return {
       ...graph,
@@ -206,12 +224,12 @@ export function applyChangeSetInplace (graph, changeSet) {
       [changeSet.query]: graph[changeSet.query].filter((n) => !changeSet.filter(n))
     }
   } else if (changeSet.operation === 'set') {
-    return _.set(graph, changeSet.query, changeSet.value)
+    return _f.set(changeSet.query, changeSet.value, graph)
   } else if (changeSet.operation === 'setKey') {
     return applySetKey(graph, changeSet.query + '.' + changeSet.key, changeSet.value)
   } else if (changeSet.operation === 'removeKey') {
-    _.unset(graph, changeSet.query + '.' + changeSet.key)
-    return graph
+    return _f.unset(changeSet.query + '.' + changeSet.key, graph)
+    // return graph
   }
   return graph
 }
