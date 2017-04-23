@@ -109,28 +109,6 @@ export function removeEdge (edge) {
 }
 
 /**
- * Creates a change set that adds edges to connect nodes in succession. All nodes, except the first and last, must be compound nodes.
- * @params {Object[]} stations The different nodes to connect in succession. Each object must contain a node property
- * and can contain a port property. E.g. `{node: 'a'}` org `{node: 'b', port: 'p'}`.
- * @returns {ChangeSet[]} An array of change sets that inserts the edges between the nodes. The change set will generate |stations| - 1 edges.
- */
-export function createConnection (stations, extraValue = {}) {
-  return _.reduce(stations, (acc, cur) => {
-    if (!acc) {
-      return {last: cur, edges: []}
-    } else {
-      var edgeCS = insertEdge({
-        v: acc.last.node,
-        w: cur.node,
-        value: _.merge({outPort: acc.last.port, inPort: cur.port}, extraValue),
-        name: acc.last.node + '@' + acc.last.port + '→' + cur.node + '@' + cur.port
-      })
-      return {last: cur, edges: _.concat(acc.edges, [edgeCS])}
-    }
-  }, null).edges
-}
-
-/**
  * Checks whether a value is a change set or not.
  * @param changeSet The value that should be checked.
  * @returns True if it is a changeSet, false otherwise.
@@ -139,63 +117,14 @@ export function isChangeSet (changeSet) {
   return typeof (changeSet) === 'object' && changeSet.type === 'changeSet'
 }
 
-const applyMerge = (refs, mergeValue) => {
-  _.each(refs, (r) => {
-    _.mergeWith(r, mergeValue, (objValue, srcValue) => {
-      if (_.isArray(objValue)) {
-        return objValue.concat(srcValue)
-      }
-    })
-  })
-}
-
-const applyInsert = (refs, insertValue) => {
-  _.each(refs, (r) => {
-    if (!Array.isArray(r)) {
-      throw new Error('Error while inserting, reference is no array' + JSON.stringify(r))
-    }
-    r.push(insertValue)
-  })
-}
-
-const applyRemove = (refs, removeFilter) => {
-  const findFunc = (typeof (removeFilter) === 'function')
-    ? removeFilter
-    : (r) => _.isEqual(r, removeFilter)
-
-  _.each(refs, (ref) => {
-    var idx = _.findIndex(ref, findFunc)
-    if (idx > -1) {
-      ref.splice(idx, 1)
-    }
-  })
-}
-
-const applySet = (refs, value) => {
-  _.each(refs, (r) => _.merge(r, value))
-}
-
-const applySetKey = (refs, key, value) => {
-  _.each(refs, (r) => {
-    const v = _.get(r, key)
-    if (typeof (v) === 'object' && typeof (value) === 'object') {
-      _.set(r, key, _.merge(_.get(r, key), value))
-    } else {
-      _.set(r, key, value)
-    }
-  })
-}
-
-const applyRemoveKey = (refs, key) => {
-  _.each(refs, (r) => _.unset(r, key))
-}
-
-const getReferences = (graph, changeSet) => {
-  var refs = jq(changeSet.query, {data: graph})
-  if (refs.length === 0) {
-    throw new Error('Cannot ' + changeSet.operation + ' in ' + changeSet.query + ' the value: ' + JSON.stringify(changeSet.value))
+const applySetKey = (r, key, value) => {
+  const v = _.get(r, key)
+  if (typeof (v) === 'object' && typeof (value) === 'object') {
+    _.set(r, key, _.merge(_.get(r, key), value))
+  } else {
+    _.set(r, key, value)
   }
-  return refs.references
+  return r
 }
 
 const applyMergeByPath = (graph, path, value) => {
@@ -244,8 +173,7 @@ export function applyChangeSet (graph, changeSet) {
  */
 export function applyChangeSets (graph, changeSets) {
   var newGraph = _.cloneDeep(graph)
-  _.each(changeSets, (c) => applyChangeSetInplace(newGraph, c))
-  return newGraph
+  return changeSets.reduce((g, c) => applyChangeSetInplace(g, c), newGraph)
 }
 
 /**
@@ -258,39 +186,32 @@ export function applyChangeSets (graph, changeSets) {
 export function applyChangeSetInplace (graph, changeSet) {
   if (!isChangeSet(changeSet)) {
     throw new Error('Cannot apply non-ChangeSet ' + JSON.stringify(changeSet))
-  }
-  if (changeSet.operation === 'mergePath') {
+  } else if (changeSet.operation === 'mergePath') {
     applyMergeByPath(graph, changeSet.query, changeSet.value)
     return graph
-  }
-  if (changeSet.operation === 'mergeComponent') {
+  } else if (changeSet.operation === 'mergeComponent') {
     applyMergeByComponent(graph, changeSet.query, changeSet.value)
     return graph
-  }
-  if (changeSet.operation === 'mergeEdge') {
+  } else if (changeSet.operation === 'mergeEdge') {
     applyMergeByEdge(graph, changeSet.query, changeSet.value)
     return graph
-  }
-  var refs = getReferences(graph, changeSet)
-  switch (changeSet.operation) {
-    case 'merge':
-      applyMerge(refs, changeSet.value)
-      break
-    case 'insert':
-      applyInsert(refs, changeSet.value)
-      break
-    case 'remove':
-      applyRemove(refs, changeSet.filter)
-      break
-    case 'removeKey':
-      applyRemoveKey(refs, changeSet.key)
-      break
-    case 'set':
-      applySet(refs, changeSet.value)
-      break
-    case 'setKey':
-      applySetKey(refs, changeSet.key, changeSet.value)
-      break
+  } else if (changeSet.operation === 'insert') {
+    return {
+      ...graph,
+      [changeSet.query]: [ ...graph[changeSet.query], changeSet.value ]
+    }
+  } else if (changeSet.operation === 'remove') {
+    return {
+      ...graph,
+      [changeSet.query]: graph[changeSet.query].filter((n) => !changeSet.filter(n))
+    }
+  } else if (changeSet.operation === 'set') {
+    return _.set(graph, changeSet.query, changeSet.value)
+  } else if (changeSet.operation === 'setKey') {
+    return applySetKey(graph, changeSet.query + '.' + changeSet.key, changeSet.value)
+  } else if (changeSet.operation === 'removeKey') {
+    _.unset(graph, changeSet.query + '.' + changeSet.key)
+    return graph
   }
   return graph
 }
