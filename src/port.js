@@ -131,13 +131,18 @@ export function isPort (any) {
     typeof (any) === 'string' && isPortNotation(any)
 }
 
+function isLetter (c) {
+  return /[a-zA-Z]/.test(c)
+}
+
 /**
  * Returns whether the given port is valid or not.
  * @param port The object to test.
  * @returns {boolean} True if the value is a valid port, false otherwise.
  */
 export function isValid (port) {
-  return typeof (port) === 'object' && port.port && (port.kind === INPUT || port.kind === OUTPUT) && port.type
+  return typeof (port) === 'object' && port.port && (port.kind === INPUT || port.kind === OUTPUT) && port.type &&
+    isLetter(port.port[0])
 }
 
 /**

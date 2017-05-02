@@ -28,6 +28,7 @@ function uniquePortName (port) {
 }
 
 const uniqify = (port) => {
+  // unique type names should not be part of this function
   const t = (typeof (port.type) === 'string' && port.type[0].toLowerCase() === port.type[0]) ? port.type + port.node : port.type
   // const t = port.type
   return Object.assign({}, port, {port: uniquePortName(port), type: t})
