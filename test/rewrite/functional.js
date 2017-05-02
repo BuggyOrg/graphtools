@@ -36,7 +36,7 @@ describe('Rewrite basic API', () => {
         )()
         const fn = Functional.replaceByCall(graph, ['b', 'a'], graph)
         expect(Graph.hasNode('/functional/lambda', fn)).to.be.true
-        expect(Graph.hasNode('/functional/call', fn)).to.be.true
+        expect(Graph.hasNode('/call', fn)).to.be.true
       })
 
       it('Can create a lambda function out of an compound with one input partial', () => {
@@ -49,7 +49,7 @@ describe('Rewrite basic API', () => {
         )()
         const fn = Functional.replaceByCall(graph, ['b'], graph)
         expect(Graph.hasNode('/functional/lambda', fn)).to.be.true
-        expect(Graph.hasNode('/functional/call', fn)).to.be.true
+        expect(Graph.hasNode('/call', fn)).to.be.true
         expect(Graph.hasNode('/functional/partial', fn)).to.be.true
       })
 
@@ -65,7 +65,7 @@ describe('Rewrite basic API', () => {
         )()
         const fn = Functional.replaceByCall(graph, ['b'], graph)
         expect(Graph.hasNode('/functional/lambda', fn)).to.be.true
-        expect(Graph.hasNode('/functional/call', fn)).to.be.true
+        expect(Graph.hasNode('/call', fn)).to.be.true
         expect(Graph.hasNode('/functional/partial', fn)).to.be.true
         expect(Graph.nodes(fn)).to.have.length(7)
       })
