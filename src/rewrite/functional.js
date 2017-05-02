@@ -93,7 +93,7 @@ export const createInputPartials = curry((context, graph, ...cbs) => {
 })
 
 const createCall = ([context, last], graph) =>
-  Graph.Let(Graph.addNode(createFunctionCall(context.outputs)), (call, graph) =>
+  Graph.Let(Graph.addNodeIn(context.parent, createFunctionCall(context.outputs)), (call, graph) =>
     Graph.flow(
       Graph.addEdge({from: Node.port('fn', last), to: Node.port('fn', call)}),
       flatten(context.outputs.map(([port, succ]) =>

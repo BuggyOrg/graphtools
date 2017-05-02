@@ -290,5 +290,18 @@ describe('Basic graph functions', () => {
       var settedGraph3 = Graph.set({isSet: true}, 'c', graph)
       expect(Graph.get('isSet', 'c', settedGraph3)).to.be.true
     })
+
+    it.skip('replaces all IDs inside a compound', () => {
+      var impl = Graph.flow(
+        Graph.addNode({name: 'a', ports: [{port: 'out', kind: 'output', type: 'number'}], atomic: true}),
+        Graph.addNode({name: 'b', ports: [{port: 'in', kind: 'input', type: 'number'}], atomic: true}),
+        Graph.addEdge({from: 'a@out', to: 'b@in'})
+      )(Graph.compound({name: 'b', ports: [{port: 'out', kind: 'output', type: 'string'}]}))
+      var graph = Graph.flow(
+        Graph.Let(Graph.addNode(impl), (node, graph) =>
+          Graph.addNode(impl, graph))
+      )()
+      require('../../src/debug').debug(graph)
+    })
   })
 })

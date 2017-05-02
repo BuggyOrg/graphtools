@@ -181,7 +181,7 @@ export function createPartial () {
 
 export function createFunctionCall (outputs) {
   return {
-    componentId: 'functional/call',
+    componentId: 'call',
     ports: [
       {port: 'fn', kind: 'input', type: 'function'}
     ].concat(outputs.map((p) => omit('node', p[0]))),
