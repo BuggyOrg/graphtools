@@ -14,6 +14,7 @@ import _f from 'lodash/fp'
 import * as Node from './node'
 import * as Edge from './edge'
 import * as Component from './component'
+import {resetStore} from './graph/internal'
 
 const hasChildren = Node.hasChildren
 

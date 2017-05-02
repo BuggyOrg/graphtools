@@ -38,6 +38,25 @@ function nodesDeepInternal (graph) {
     .concat(nodesDeepRec(graph, nodes(graph)))
 }
 
+function store (what, key, graph) {
+  if (!graph.___store) initStore(graph)
+  graph.___store[key] = what
+  return what
+}
+
+function access (key, graph) {
+  return (graph.___store) ? graph.___store[key] : undefined
+}
+
+function initStore (graph) {
+  Object.defineProperty(graph, '___store', {configurable: true, enumerable: false, value: {}})
+}
+
+export function resetStore (graph) {
+  delete graph.___store
+  initStore(graph)
+}
+
 /**
  * Get all nodes at all depths. It will go into every compound node and return their nodes
  * and the nodes of their compound nodes, etc.
@@ -45,7 +64,7 @@ function nodesDeepInternal (graph) {
  * @returns {Node[]} A list of nodes.
  */
 export function nodesDeep (graph) {
-  return nodesDeepInternal(graph).concat([graph])
+  return access('nodesDeep', graph) || store(nodesDeepInternal(graph).concat([graph]), 'nodesDeep', graph)
 }
 
 /**

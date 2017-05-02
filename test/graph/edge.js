@@ -372,6 +372,17 @@ describe('Basic graph functions', () => {
       expect(Graph.edges(graph)[0]).to.have.property('type', 'a')
     })
 
+    it('does not break due to the cache', () => {
+      var graph = Graph.flow(
+        Graph.addNode({name: 'a', ports: [{port: 'out', kind: 'output', type: 'a'}]}),
+        Graph.addNode({name: 'b', ports: [{port: 'in', kind: 'input', type: 'a'}]}),
+        Graph.addEdge({from: 'a@out', to: 'b@in'}),
+        Graph.addNode({name: 'c', ports: [{port: 'in', kind: 'input', type: 'a'}]}),
+        Graph.addEdge({from: 'a@out', to: 'c@in'}),
+      )()
+      expect(Graph.edges(graph)[0]).to.have.property('type', 'a')
+    })
+
     it('does not implicity go in compounds when looking for node predecessors / successors', () => {
       var graph = Graph.fromJSON(JSON.parse(fs.readFileSync('./test/fixtures/print-thread-co.json', 'utf8')))
       expect(Graph.successors('/thread', graph)).to.have.length(1)
