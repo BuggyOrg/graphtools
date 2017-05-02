@@ -217,7 +217,27 @@ describe('Rewrite basic API', () => {
         expect(Graph.predecessors('C', pGraph)).to.have.length(1)
       })
 
-      it('merges ')
+      it('can handle complex types', () => {
+        const cmpd = Graph.flow(
+          Graph.addNode({name: 'N', ports: [{port: 'in', kind: 'input', type: 'g'}, {port: 'out', kind: 'output', type: 'g'}]}),
+          Graph.addEdge({from: '@in', to: 'N@in'}),
+          Graph.addEdge({from: 'N@out', to: '@out'})
+        )(Graph.compound({name: 'C', ports: [{port: 'in', kind: 'input', type: {name: 'A', data: ['g']}}, {port: 'in2', kind: 'input', type: 'g'}, {port: 'out', kind: 'output', type: 'g'}]}))
+
+        const graph = Graph.flow(
+          Graph.addNode({name: 'pred1', ports: [{port: 'in', kind: 'input', type: 'g'}, {port: 'out', kind: 'output', type: {name: 'A', data: ['g']}}]}),
+          Graph.addNode({name: 'pred2', ports: [{port: 'in', kind: 'input', type: {name: 'A', data: ['g']}}, {port: 'out', kind: 'output', type: {name: 'A', data: ['g']}}]}),
+          Graph.addNode(cmpd),
+          Graph.addEdge({from: 'pred1@out', to: 'pred2@in'}),
+          Graph.addEdge({from: 'pred2@out', to: 'C@in2'})
+        )()
+
+        const pGraph = includePredecessor('C@in2', graph)
+        expect(pGraph).to.be.ok
+        expect(Graph.edges(pGraph)).to.have.length(1)
+        expect(Graph.successors('pred1', pGraph)).to.have.length(1)
+        expect(Graph.predecessors('C', pGraph)).to.have.length(1)
+      })
     })
 
     describe('Excluding inner nodes', () => {

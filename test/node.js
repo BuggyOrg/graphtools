@@ -65,6 +65,7 @@ describe('Node API', () => {
     expect(Node.isValid({id: 'a', ports: [{port: 'p', kind: 'output'}]})).to.be.false
     expect(Node.isValid({idd: 'a', ports: [{port: 'p', kind: 'output', type: 'number'}]})).to.be.false
     expect(Node.isValid({ports: [{port: 'p', kind: 'output', type: 'number'}]})).to.be.false
+    expect(Node.isValid({id: 'a', ports: [{port: '1p', kind: 'output', type: 'number'}]}), 'Port names start with a letter').to.be.false
     expect(Node.isValid()).to.be.false
   })
 
