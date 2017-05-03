@@ -5,29 +5,28 @@
         {
           "port": "text",
           "kind": "input",
-          "type": "String",
-          "node": "#cj1fb6j3a000bi9g2esslu3ip"
+          "type": "String"
         },
         {
           "port": "IO_in",
           "kind": "input",
-          "type": "IO",
-          "node": "#cj1fb6j3a000bi9g2esslu3ip"
+          "type": "IO"
         },
         {
           "port": "IO_out",
           "kind": "output",
           "type": "IO",
-          "node": "#cj1fb6j3a000bi9g2esslu3ip"
+          "node": "#cj2967fhj000b7slu8oh9jfvo"
         }
       ],
+      "metaInformation": {},
       "settings": {},
       "componentId": "print",
       "version": "1.0.0",
       "atomic": true,
-      "id": "#cj1fb6j3a000bi9g2esslu3ip",
+      "id": "#cj2967fhj000b7slu8oh9jfvo",
       "path": [
-        "#cj1fb6j3a000bi9g2esslu3ip"
+        "#cj2967fhj000b7slu8oh9jfvo"
       ],
       "edges": []
     },
@@ -36,23 +35,23 @@
         {
           "type": "Number",
           "kind": "input",
-          "port": "inNumber",
-          "node": "#cj1fb6j3b000ci9g24kzery4o"
+          "port": "inNumber"
         },
         {
           "type": "String",
           "kind": "output",
           "port": "outStr",
-          "node": "#cj1fb6j3b000ci9g24kzery4o"
+          "node": "#cj2967fhj000c7slu6y2cvfbr"
         }
       ],
+      "metaInformation": {},
       "settings": {},
       "atomic": true,
       "version": "1.0.0",
       "componentId": "numToStr",
-      "id": "#cj1fb6j3b000ci9g24kzery4o",
+      "id": "#cj2967fhj000c7slu6y2cvfbr",
       "path": [
-        "#cj1fb6j3b000ci9g24kzery4o"
+        "#cj2967fhj000c7slu6y2cvfbr"
       ],
       "edges": []
     },
@@ -60,31 +59,43 @@
       "metaInformation": {
         "parameters": {
           "type": "Number",
-          "value": 4,
-          "typings": {
-            "generic": "Number"
-          }
+          "value": 9
         }
       },
       "settings": {},
-      "componentId": "std/const",
-      "version": "1.0.0",
-      "atomic": true,
-      "edges": [],
       "ports": [
         {
           "port": "const",
           "kind": "output",
-          "type": "Number",
-          "node": "#cj1fb6j3c000ei9g26lmt6bak"
+          "type": "generic",
+          "node": "#cj2967fhk000e7slu5gylsm3w"
         }
       ],
-      "id": "#cj1fb6j3c000ei9g26lmt6bak",
+      "componentId": "std/const",
+      "version": "1.0.0",
+      "atomic": true,
+      "id": "#cj2967fhk000e7slu5gylsm3w",
       "path": [
-        "#cj1fb6j3c000ei9g26lmt6bak"
-      ]
+        "#cj2967fhk000e7slu5gylsm3w"
+      ],
+      "edges": []
     },
     {
+      "ports": [
+        {
+          "port": "n",
+          "kind": "input",
+          "type": "generic0",
+          "node": "#cj2967fhk000d7slu14lp31lu"
+        },
+        {
+          "port": "value",
+          "kind": "output",
+          "type": "generic1",
+          "node": "#cj2967fhk000d7slu14lp31lu"
+        }
+      ],
+      "metaInformation": {},
       "settings": {
         "recursiveRoot": true,
         "isRecursive": true
@@ -95,30 +106,29 @@
             {
               "port": "lesser",
               "type": "Number",
-              "kind": "input",
-              "node": "#cj1fb6jdb0001iag23hnhnqkk"
+              "kind": "input"
             },
             {
               "port": "bigger",
               "type": "Number",
-              "kind": "input",
-              "node": "#cj1fb6jdb0001iag23hnhnqkk"
+              "kind": "input"
             },
             {
               "port": "isLess",
               "type": "Bool",
               "kind": "output",
-              "node": "#cj1fb6jdb0001iag23hnhnqkk"
+              "node": "#cj2967fjg00017tlu0a8l6pkn"
             }
           ],
+          "metaInformation": {},
           "settings": {},
           "atomic": true,
           "componentId": "math/less",
           "version": "1.0.0",
-          "id": "#cj1fb6jdb0001iag23hnhnqkk",
+          "id": "#cj2967fjg00017tlu0a8l6pkn",
           "path": [
-            "#cj1fb6j3b000di9g2shgakg91",
-            "#cj1fb6jdb0001iag23hnhnqkk"
+            "#cj2967fhk000d7slu14lp31lu",
+            "#cj2967fjg00017tlu0a8l6pkn"
           ],
           "edges": []
         },
@@ -126,30 +136,27 @@
           "metaInformation": {
             "parameters": {
               "type": "Number",
-              "value": 1,
-              "typings": {
-                "generic": "Number"
-              }
+              "value": 1
             }
           },
           "settings": {},
-          "componentId": "std/const",
-          "version": "1.0.0",
-          "atomic": true,
-          "edges": [],
           "ports": [
             {
               "port": "const",
               "kind": "output",
-              "type": "Number",
-              "node": "#cj1fb6jdc0002iag2im54xiyc"
+              "type": "generic",
+              "node": "#cj2967fjg00027tluiqg86kp5"
             }
           ],
-          "id": "#cj1fb6jdc0002iag2im54xiyc",
+          "componentId": "std/const",
+          "version": "1.0.0",
+          "atomic": true,
+          "id": "#cj2967fjg00027tluiqg86kp5",
           "path": [
-            "#cj1fb6j3b000di9g2shgakg91",
-            "#cj1fb6jdc0002iag2im54xiyc"
-          ]
+            "#cj2967fhk000d7slu14lp31lu",
+            "#cj2967fjg00027tluiqg86kp5"
+          ],
+          "edges": []
         },
         {
           "componentId": "ifThunk",
@@ -158,7 +165,7 @@
               "port": "condition",
               "kind": "input",
               "type": "Bool",
-              "node": "#cj1fb6l8w0008img229s2gkmt"
+              "node": "#cj2967gck00087vluff7nh3vy"
             },
             {
               "port": "inTrue",
@@ -173,12 +180,12 @@
                   {
                     "name": "returnValues",
                     "data": [
-                      "Number"
+                      "generic"
                     ]
                   }
                 ]
               },
-              "node": "#cj1fb6l8w0008img229s2gkmt"
+              "node": "#cj2967gck00087vluff7nh3vy"
             },
             {
               "port": "inFalse",
@@ -193,27 +200,27 @@
                   {
                     "name": "returnValues",
                     "data": [
-                      "Number"
+                      "generic"
                     ]
                   }
                 ]
               },
-              "node": "#cj1fb6l8w0008img229s2gkmt"
+              "node": "#cj2967gck00087vluff7nh3vy"
             },
             {
               "port": "choice",
               "kind": "output",
-              "type": "Number",
-              "node": "#cj1fb6l8w0008img229s2gkmt"
+              "type": "generic",
+              "node": "#cj2967gck00087vluff7nh3vy"
             }
           ],
           "atomic": true,
-          "id": "#cj1fb6l8w0008img229s2gkmt",
+          "id": "#cj2967gck00087vluff7nh3vy",
           "metaInformation": {},
           "settings": {},
           "path": [
-            "#cj1fb6j3b000di9g2shgakg91",
-            "#cj1fb6l8w0008img229s2gkmt"
+            "#cj2967fhk000d7slu14lp31lu",
+            "#cj2967gck00087vluff7nh3vy"
           ]
         },
         {
@@ -226,31 +233,28 @@
                   "metaInformation": {
                     "parameters": {
                       "type": "Number",
-                      "value": 1,
-                      "typings": {
-                        "generic": "Number"
-                      }
+                      "value": 1
                     }
                   },
                   "settings": {},
-                  "componentId": "std/const",
-                  "version": "1.0.0",
-                  "atomic": true,
-                  "edges": [],
                   "ports": [
                     {
                       "port": "const",
                       "kind": "output",
-                      "type": "Number",
-                      "node": "#cj1fb6jdc0003iag242mdhsib"
+                      "type": "generic",
+                      "node": "#cj2967fjg00037tluh4jkqcbm"
                     }
                   ],
-                  "id": "#cj1fb6jdc0003iag242mdhsib",
+                  "componentId": "std/const",
+                  "version": "1.0.0",
+                  "atomic": true,
+                  "edges": [],
+                  "id": "#cj2967fjg00037tluh4jkqcbm",
                   "path": [
-                    "#cj1fb6j3b000di9g2shgakg91",
-                    "#cj1fb6lv5000pimg285zjwmjj",
-                    "#cj1fb6lor000cimg2a8lpa1pi",
-                    "#cj1fb6jdc0003iag242mdhsib"
+                    "#cj2967fhk000d7slu14lp31lu",
+                    "#cj2967gpm000q7vlug5rg7gh1",
+                    "#cj2967gjz000c7vlusedgttuk",
+                    "#cj2967fjg00037tluh4jkqcbm"
                   ]
                 }
               ],
@@ -259,13 +263,13 @@
                 {
                   "from": {
                     "type": "generic",
-                    "node": "#cj1fb6jdc0003iag242mdhsib",
+                    "node": "#cj2967fjg00037tluh4jkqcbm",
                     "port": "const"
                   },
                   "to": {
                     "type": "generic",
-                    "node": "#cj1fb6lor000cimg2a8lpa1pi",
-                    "port": "#cj1fb6jdc0003iag242mdhsib→const"
+                    "node": "#cj2967gjz000c7vlusedgttuk",
+                    "port": "const#cj2967fjg00037tluh4jkqcbm"
                   },
                   "layer": "dataflow",
                   "innerCompoundInput": true
@@ -274,19 +278,19 @@
               "components": [],
               "ports": [
                 {
-                  "node": "#cj1fb6lor000cimg2a8lpa1pi",
-                  "port": "#cj1fb6jdc0003iag242mdhsib→const",
+                  "node": "#cj2967gjz000c7vlusedgttuk",
+                  "port": "const#cj2967fjg00037tluh4jkqcbm",
                   "kind": "output",
-                  "type": "Number"
+                  "type": "generic#cj2967fjg00037tluh4jkqcbm"
                 }
               ],
               "atomic": false,
               "settings": {},
-              "id": "#cj1fb6lor000cimg2a8lpa1pi",
+              "id": "#cj2967gjz000c7vlusedgttuk",
               "path": [
-                "#cj1fb6j3b000di9g2shgakg91",
-                "#cj1fb6lv5000pimg285zjwmjj",
-                "#cj1fb6lor000cimg2a8lpa1pi"
+                "#cj2967fhk000d7slu14lp31lu",
+                "#cj2967gpm000q7vlug5rg7gh1",
+                "#cj2967gjz000c7vlusedgttuk"
               ]
             }
           ],
@@ -305,20 +309,20 @@
                   {
                     "name": "returnValues",
                     "data": [
-                      "Number"
+                      "generic#cj2967fjg00037tluh4jkqcbm"
                     ]
                   }
                 ]
               },
-              "node": "#cj1fb6lv5000pimg285zjwmjj"
+              "node": "#cj2967gpm000q7vlug5rg7gh1"
             }
           ],
           "metaInformation": {},
           "settings": {},
-          "id": "#cj1fb6lv5000pimg285zjwmjj",
+          "id": "#cj2967gpm000q7vlug5rg7gh1",
           "path": [
-            "#cj1fb6j3b000di9g2shgakg91",
-            "#cj1fb6lv5000pimg285zjwmjj"
+            "#cj2967fhk000d7slu14lp31lu",
+            "#cj2967gpm000q7vlug5rg7gh1"
           ]
         },
         {
@@ -333,72 +337,66 @@
                       "kind": "input",
                       "type": "Number",
                       "port": "factor1",
-                      "node": "#cj1fb6jdc0004iag27sqpt8sd"
+                      "node": "#cj2967fjg00047tluuffz33bk"
                     },
                     {
                       "kind": "input",
                       "type": "Number",
                       "port": "factor2",
-                      "node": "#cj1fb6jdc0004iag27sqpt8sd"
+                      "node": "#cj2967fjg00047tluuffz33bk"
                     },
                     {
                       "kind": "output",
                       "type": "Number",
                       "port": "product",
-                      "node": "#cj1fb6jdc0004iag27sqpt8sd"
+                      "node": "#cj2967fjg00047tluuffz33bk"
                     }
                   ],
+                  "metaInformation": {},
                   "settings": {},
                   "version": "1.0.0",
                   "componentId": "math/multiply",
                   "atomic": true,
                   "edges": [],
-                  "id": "#cj1fb6jdc0004iag27sqpt8sd",
-                  "metaInformation": {},
+                  "id": "#cj2967fjg00047tluuffz33bk",
                   "path": [
-                    "#cj1fb6j3b000di9g2shgakg91",
-                    "#cj1fb6ogo001rimg2kwq69uh5",
-                    "#cj1fb6mkg000uimg2wew2ynsm",
-                    "#cj1fb6jdc0004iag27sqpt8sd"
+                    "#cj2967fhk000d7slu14lp31lu",
+                    "#cj2967i7p001s7vlukgtil1fl",
+                    "#cj2967h06000u7vlu5xj2fgfv",
+                    "#cj2967fjg00047tluuffz33bk"
                   ]
                 },
                 {
+                  "ports": [
+                    {
+                      "port": "n",
+                      "kind": "input",
+                      "type": "generic0",
+                      "node": "#cj2967fjg00057tluawb1enpx"
+                    },
+                    {
+                      "port": "value",
+                      "kind": "output",
+                      "type": "generic1",
+                      "node": "#cj2967fjg00057tluawb1enpx"
+                    }
+                  ],
+                  "metaInformation": {},
                   "settings": {
                     "isRecursive": true
                   },
                   "nodes": [],
-                  "metaInformation": {
-                    "parameters": {
-                      "typings": {
-                        "generic": "Number"
-                      }
-                    }
-                  },
                   "edges": [],
                   "components": [],
                   "atomic": true,
                   "version": "0.0.0",
                   "componentId": "fac",
-                  "ports": [
-                    {
-                      "port": "n",
-                      "kind": "input",
-                      "type": "Number",
-                      "node": "#cj1fb6jdc0005iag2aji68q7m"
-                    },
-                    {
-                      "port": "value",
-                      "kind": "output",
-                      "type": "Number",
-                      "node": "#cj1fb6jdc0005iag2aji68q7m"
-                    }
-                  ],
-                  "id": "#cj1fb6jdc0005iag2aji68q7m",
+                  "id": "#cj2967fjg00057tluawb1enpx",
                   "path": [
-                    "#cj1fb6j3b000di9g2shgakg91",
-                    "#cj1fb6ogo001rimg2kwq69uh5",
-                    "#cj1fb6mkg000uimg2wew2ynsm",
-                    "#cj1fb6jdc0005iag2aji68q7m"
+                    "#cj2967fhk000d7slu14lp31lu",
+                    "#cj2967i7p001s7vlukgtil1fl",
+                    "#cj2967h06000u7vlu5xj2fgfv",
+                    "#cj2967fjg00057tluawb1enpx"
                   ]
                 },
                 {
@@ -407,64 +405,61 @@
                       "port": "summand1",
                       "type": "Number",
                       "kind": "input",
-                      "node": "#cj1fb6jdc0006iag2ltph218n"
+                      "node": "#cj2967fjg00067tluwfvjz79j"
                     },
                     {
                       "port": "summand2",
                       "type": "Number",
                       "kind": "input",
-                      "node": "#cj1fb6jdc0006iag2ltph218n"
+                      "node": "#cj2967fjg00067tluwfvjz79j"
                     },
                     {
                       "port": "sum",
                       "type": "Number",
                       "kind": "output",
-                      "node": "#cj1fb6jdc0006iag2ltph218n"
+                      "node": "#cj2967fjg00067tluwfvjz79j"
                     }
                   ],
+                  "metaInformation": {},
                   "settings": {},
                   "atomic": true,
                   "componentId": "math/add",
                   "version": "1.0.0",
                   "edges": [],
-                  "id": "#cj1fb6jdc0006iag2ltph218n",
-                  "metaInformation": {},
+                  "id": "#cj2967fjg00067tluwfvjz79j",
                   "path": [
-                    "#cj1fb6j3b000di9g2shgakg91",
-                    "#cj1fb6ogo001rimg2kwq69uh5",
-                    "#cj1fb6mkg000uimg2wew2ynsm",
-                    "#cj1fb6jdc0006iag2ltph218n"
+                    "#cj2967fhk000d7slu14lp31lu",
+                    "#cj2967i7p001s7vlukgtil1fl",
+                    "#cj2967h06000u7vlu5xj2fgfv",
+                    "#cj2967fjg00067tluwfvjz79j"
                   ]
                 },
                 {
                   "metaInformation": {
                     "parameters": {
                       "type": "Number",
-                      "value": -1,
-                      "typings": {
-                        "generic": "Number"
-                      }
+                      "value": -1
                     }
                   },
                   "settings": {},
-                  "componentId": "std/const",
-                  "version": "1.0.0",
-                  "atomic": true,
-                  "edges": [],
                   "ports": [
                     {
                       "port": "const",
                       "kind": "output",
-                      "type": "Number",
-                      "node": "#cj1fb6jdd0007iag2rg2nayke"
+                      "type": "generic",
+                      "node": "#cj2967fjg00077tlu4cuap4lc"
                     }
                   ],
-                  "id": "#cj1fb6jdd0007iag2rg2nayke",
+                  "componentId": "std/const",
+                  "version": "1.0.0",
+                  "atomic": true,
+                  "edges": [],
+                  "id": "#cj2967fjg00077tlu4cuap4lc",
                   "path": [
-                    "#cj1fb6j3b000di9g2shgakg91",
-                    "#cj1fb6ogo001rimg2kwq69uh5",
-                    "#cj1fb6mkg000uimg2wew2ynsm",
-                    "#cj1fb6jdd0007iag2rg2nayke"
+                    "#cj2967fhk000d7slu14lp31lu",
+                    "#cj2967i7p001s7vlukgtil1fl",
+                    "#cj2967h06000u7vlu5xj2fgfv",
+                    "#cj2967fjg00077tlu4cuap4lc"
                   ]
                 }
               ],
@@ -473,12 +468,12 @@
                 {
                   "from": {
                     "type": "generic",
-                    "node": "#cj1fb6mkg000uimg2wew2ynsm",
-                    "port": "#cj1fb6jdc0004iag27sqpt8sd→factor1"
+                    "node": "#cj2967h06000u7vlu5xj2fgfv",
+                    "port": "factor1#cj2967fjg00047tluuffz33bk"
                   },
                   "to": {
                     "type": "generic",
-                    "node": "#cj1fb6jdc0004iag27sqpt8sd",
+                    "node": "#cj2967fjg00047tluuffz33bk",
                     "port": "factor1"
                   },
                   "layer": "dataflow",
@@ -487,13 +482,13 @@
                 {
                   "from": {
                     "type": "generic",
-                    "node": "#cj1fb6jdc0004iag27sqpt8sd",
+                    "node": "#cj2967fjg00047tluuffz33bk",
                     "port": "product"
                   },
                   "to": {
                     "type": "generic",
-                    "node": "#cj1fb6mkg000uimg2wew2ynsm",
-                    "port": "#cj1fb6jdc0004iag27sqpt8sd→product"
+                    "node": "#cj2967h06000u7vlu5xj2fgfv",
+                    "port": "product#cj2967fjg00047tluuffz33bk"
                   },
                   "layer": "dataflow",
                   "innerCompoundInput": true
@@ -502,12 +497,12 @@
                   "from": {
                     "port": "value",
                     "kind": "output",
-                    "type": "Number",
-                    "node": "#cj1fb6jdc0005iag2aji68q7m"
+                    "type": "generic1",
+                    "node": "#cj2967fjg00057tluawb1enpx"
                   },
                   "to": {
                     "type": "Number",
-                    "node": "#cj1fb6jdc0004iag27sqpt8sd",
+                    "node": "#cj2967fjg00047tluuffz33bk",
                     "port": "factor2"
                   },
                   "layer": "dataflow"
@@ -515,12 +510,12 @@
                 {
                   "from": {
                     "type": "generic",
-                    "node": "#cj1fb6mkg000uimg2wew2ynsm",
-                    "port": "summand1"
+                    "node": "#cj2967h06000u7vlu5xj2fgfv",
+                    "port": "summand1#cj2967fjg00067tluwfvjz79j"
                   },
                   "to": {
                     "type": "generic",
-                    "node": "#cj1fb6jdc0006iag2ltph218n",
+                    "node": "#cj2967fjg00067tluwfvjz79j",
                     "port": "summand1"
                   },
                   "layer": "dataflow",
@@ -531,11 +526,11 @@
                     "port": "sum",
                     "type": "Number",
                     "kind": "output",
-                    "node": "#cj1fb6jdc0006iag2ltph218n"
+                    "node": "#cj2967fjg00067tluwfvjz79j"
                   },
                   "to": {
                     "type": "Number",
-                    "node": "#cj1fb6jdc0005iag2aji68q7m",
+                    "node": "#cj2967fjg00057tluawb1enpx",
                     "port": "n"
                   },
                   "layer": "dataflow"
@@ -544,12 +539,12 @@
                   "from": {
                     "port": "const",
                     "kind": "output",
-                    "type": "Number",
-                    "node": "#cj1fb6jdd0007iag2rg2nayke"
+                    "type": "generic",
+                    "node": "#cj2967fjg00077tlu4cuap4lc"
                   },
                   "to": {
-                    "type": "Number",
-                    "node": "#cj1fb6jdc0006iag2ltph218n",
+                    "type": "generic#cj2967fjg00067tluwfvjz79j",
+                    "node": "#cj2967fjg00067tluwfvjz79j",
                     "port": "summand2"
                   },
                   "layer": "dataflow"
@@ -560,29 +555,29 @@
               "settings": {},
               "ports": [
                 {
-                  "node": "#cj1fb6mkg000uimg2wew2ynsm",
-                  "port": "#cj1fb6jdc0004iag27sqpt8sd→factor1",
+                  "node": "#cj2967h06000u7vlu5xj2fgfv",
+                  "port": "factor1#cj2967fjg00047tluuffz33bk",
                   "kind": "input",
                   "type": "Number"
                 },
                 {
-                  "node": "#cj1fb6mkg000uimg2wew2ynsm",
-                  "port": "#cj1fb6jdc0004iag27sqpt8sd→product",
+                  "node": "#cj2967h06000u7vlu5xj2fgfv",
+                  "port": "product#cj2967fjg00047tluuffz33bk",
                   "kind": "output",
                   "type": "Number"
                 },
                 {
-                  "node": "#cj1fb6mkg000uimg2wew2ynsm",
-                  "port": "summand1",
+                  "node": "#cj2967h06000u7vlu5xj2fgfv",
+                  "port": "summand1#cj2967fjg00067tluwfvjz79j",
                   "kind": "input",
-                  "type": "Number"
+                  "type": "generic0#cj2967fjg00067tluwfvjz79j"
                 }
               ],
-              "id": "#cj1fb6mkg000uimg2wew2ynsm",
+              "id": "#cj2967h06000u7vlu5xj2fgfv",
               "path": [
-                "#cj1fb6j3b000di9g2shgakg91",
-                "#cj1fb6ogo001rimg2kwq69uh5",
-                "#cj1fb6mkg000uimg2wew2ynsm"
+                "#cj2967fhk000d7slu14lp31lu",
+                "#cj2967i7p001s7vlukgtil1fl",
+                "#cj2967h06000u7vlu5xj2fgfv"
               ]
             }
           ],
@@ -598,7 +593,7 @@
                     "name": "arguments",
                     "data": [
                       "Number",
-                      "Number"
+                      "generic0#cj2967fjg00067tluwfvjz79j"
                     ]
                   },
                   {
@@ -609,15 +604,15 @@
                   }
                 ]
               },
-              "node": "#cj1fb6ogo001rimg2kwq69uh5"
+              "node": "#cj2967i7p001s7vlukgtil1fl"
             }
           ],
           "metaInformation": {},
           "settings": {},
-          "id": "#cj1fb6ogo001rimg2kwq69uh5",
+          "id": "#cj2967i7p001s7vlukgtil1fl",
           "path": [
-            "#cj1fb6j3b000di9g2shgakg91",
-            "#cj1fb6ogo001rimg2kwq69uh5"
+            "#cj2967fhk000d7slu14lp31lu",
+            "#cj2967i7p001s7vlukgtil1fl"
           ]
         },
         {
@@ -626,29 +621,60 @@
             {
               "port": "inFn",
               "kind": "input",
-              "type": "function",
-              "node": "#cj1fb6omx001timg2v8gvezt2"
+              "type": {
+                "name": "Function",
+                "data": [
+                  {
+                    "name": "arguments",
+                    "data": [
+                      "first",
+                      "...rest"
+                    ]
+                  },
+                  {
+                    "name": "returnValues",
+                    "data": [
+                      "outType"
+                    ]
+                  }
+                ]
+              },
+              "node": "#cj2967i7y001u7vlulhfgr9r0"
             },
             {
               "port": "value",
               "kind": "input",
-              "type": "generic",
-              "node": "#cj1fb6omx001timg2v8gvezt2"
+              "type": "first",
+              "node": "#cj2967i7y001u7vlulhfgr9r0"
             },
             {
               "port": "fn",
               "kind": "output",
-              "type": "function",
-              "node": "#cj1fb6omx001timg2v8gvezt2"
+              "type": {
+                "name": "Function",
+                "data": [
+                  {
+                    "name": "arguments",
+                    "data": "rest"
+                  },
+                  {
+                    "name": "returnValues",
+                    "data": [
+                      "outType"
+                    ]
+                  }
+                ]
+              },
+              "node": "#cj2967i7y001u7vlulhfgr9r0"
             }
           ],
           "atomic": true,
-          "id": "#cj1fb6omx001timg2v8gvezt2",
+          "id": "#cj2967i7y001u7vlulhfgr9r0",
           "metaInformation": {},
           "settings": {},
           "path": [
-            "#cj1fb6j3b000di9g2shgakg91",
-            "#cj1fb6omx001timg2v8gvezt2"
+            "#cj2967fhk000d7slu14lp31lu",
+            "#cj2967i7y001u7vlulhfgr9r0"
           ]
         },
         {
@@ -657,49 +683,73 @@
             {
               "port": "inFn",
               "kind": "input",
-              "type": "function",
-              "node": "#cj1fb6orw001ximg2r0z6ht8j"
+              "type": {
+                "name": "Function",
+                "data": [
+                  {
+                    "name": "arguments",
+                    "data": [
+                      "first",
+                      "...rest"
+                    ]
+                  },
+                  {
+                    "name": "returnValues",
+                    "data": [
+                      "outType"
+                    ]
+                  }
+                ]
+              },
+              "node": "#cj2967ia4001y7vlu0t01tbd8"
             },
             {
               "port": "value",
               "kind": "input",
-              "type": "generic",
-              "node": "#cj1fb6orw001ximg2r0z6ht8j"
+              "type": "first",
+              "node": "#cj2967ia4001y7vlu0t01tbd8"
             },
             {
               "port": "fn",
               "kind": "output",
-              "type": "function",
-              "node": "#cj1fb6orw001ximg2r0z6ht8j"
+              "type": {
+                "name": "Function",
+                "data": [
+                  {
+                    "name": "arguments",
+                    "data": "rest"
+                  },
+                  {
+                    "name": "returnValues",
+                    "data": [
+                      "outType"
+                    ]
+                  }
+                ]
+              },
+              "node": "#cj2967ia4001y7vlu0t01tbd8"
             }
           ],
           "atomic": true,
-          "id": "#cj1fb6orw001ximg2r0z6ht8j",
+          "id": "#cj2967ia4001y7vlu0t01tbd8",
           "metaInformation": {},
           "settings": {},
           "path": [
-            "#cj1fb6j3b000di9g2shgakg91",
-            "#cj1fb6orw001ximg2r0z6ht8j"
+            "#cj2967fhk000d7slu14lp31lu",
+            "#cj2967ia4001y7vlu0t01tbd8"
           ]
         }
       ],
-      "metaInformation": {
-        "parameters": {
-          "typings": {
-            "generic": "Number"
-          }
-        }
-      },
       "edges": [
         {
           "from": {
             "type": "generic",
-            "node": "#cj1fb6j3b000di9g2shgakg91",
+            "node": "#cj2967fhk000d7slu14lp31lu",
             "port": "n"
           },
           "to": {
             "type": "Number",
-            "node": "#cj1fb6jdb0001iag23hnhnqkk",
+            "node": "#cj2967fjg00017tlu0a8l6pkn",
             "port": "lesser",
             "kind": "input"
           },
@@ -709,13 +759,13 @@
         {
           "from": {
             "type": "generic",
-            "node": "#cj1fb6jdc0002iag2im54xiyc",
+            "node": "#cj2967fjg00027tluiqg86kp5",
             "port": "const",
             "kind": "output"
           },
           "to": {
             "type": "Number",
-            "node": "#cj1fb6jdb0001iag23hnhnqkk",
+            "node": "#cj2967fjg00017tlu0a8l6pkn",
             "port": "bigger",
             "kind": "input"
           },
@@ -732,7 +782,7 @@
                   "name": "arguments",
                   "data": [
                     "Number",
-                    "Number"
+                    "generic0#cj2967fjg00067tluwfvjz79j"
                   ]
                 },
                 {
@@ -743,27 +793,44 @@
                 }
               ]
             },
-            "node": "#cj1fb6ogo001rimg2kwq69uh5"
+            "node": "#cj2967i7p001s7vlukgtil1fl"
           },
           "to": {
             "port": "inFn",
             "kind": "input",
-            "type": "function",
-            "node": "#cj1fb6omx001timg2v8gvezt2"
+            "type": {
+              "name": "Function",
+              "data": [
+                {
+                  "name": "arguments",
+                  "data": [
+                    "first",
+                    "...rest"
+                  ]
+                },
+                {
+                  "name": "returnValues",
+                  "data": [
+                    "outType"
+                  ]
+                }
+              ]
+            },
+            "node": "#cj2967i7y001u7vlulhfgr9r0"
           },
           "layer": "dataflow"
         },
         {
           "from": {
-            "type": "Number",
-            "node": "#cj1fb6j3b000di9g2shgakg91",
+            "type": "generic0",
+            "node": "#cj2967fhk000d7slu14lp31lu",
             "port": "n"
           },
           "to": {
             "port": "value",
             "kind": "input",
-            "type": "generic",
-            "node": "#cj1fb6omx001timg2v8gvezt2"
+            "type": "first",
+            "node": "#cj2967i7y001u7vlulhfgr9r0"
           },
           "layer": "dataflow",
           "innerCompoundOutput": true
@@ -772,28 +839,59 @@
           "from": {
             "port": "fn",
             "kind": "output",
-            "type": "function",
-            "node": "#cj1fb6omx001timg2v8gvezt2"
+            "type": {
+              "name": "Function",
+              "data": [
+                {
+                  "name": "arguments",
+                  "data": "rest"
+                },
+                {
+                  "name": "returnValues",
+                  "data": [
+                    "outType"
+                  ]
+                }
+              ]
+            },
+            "node": "#cj2967i7y001u7vlulhfgr9r0"
           },
           "to": {
             "port": "inFn",
             "kind": "input",
-            "type": "function",
-            "node": "#cj1fb6orw001ximg2r0z6ht8j"
+            "type": {
+              "name": "Function",
+              "data": [
+                {
+                  "name": "arguments",
+                  "data": [
+                    "first",
+                    "...rest"
+                  ]
+                },
+                {
+                  "name": "returnValues",
+                  "data": [
+                    "outType"
+                  ]
+                }
+              ]
+            },
+            "node": "#cj2967ia4001y7vlu0t01tbd8"
           },
           "layer": "dataflow"
         },
         {
           "from": {
-            "type": "Number",
-            "node": "#cj1fb6j3b000di9g2shgakg91",
+            "type": "generic0",
+            "node": "#cj2967fhk000d7slu14lp31lu",
             "port": "n"
           },
           "to": {
             "port": "value",
             "kind": "input",
-            "type": "generic",
-            "node": "#cj1fb6orw001ximg2r0z6ht8j"
+            "type": "first",
+            "node": "#cj2967ia4001y7vlu0t01tbd8"
           },
           "layer": "dataflow",
           "innerCompoundOutput": true
@@ -812,12 +910,12 @@
                 {
                   "name": "returnValues",
                   "data": [
-                    "Number"
+                    "generic#cj2967fjg00037tluh4jkqcbm"
                   ]
                 }
               ]
             },
-            "node": "#cj1fb6lv5000pimg285zjwmjj"
+            "node": "#cj2967gpm000q7vlug5rg7gh1"
           },
           "to": {
             "port": "inTrue",
@@ -832,12 +930,12 @@
                 {
                   "name": "returnValues",
                   "data": [
-                    "Number"
+                    "generic"
                   ]
                 }
               ]
             },
-            "node": "#cj1fb6l8w0008img229s2gkmt"
+            "node": "#cj2967gck00087vluff7nh3vy"
           },
           "layer": "dataflow"
         },
@@ -845,8 +943,22 @@
           "from": {
             "port": "fn",
             "kind": "output",
-            "type": "function",
-            "node": "#cj1fb6orw001ximg2r0z6ht8j"
+            "type": {
+              "name": "Function",
+              "data": [
+                {
+                  "name": "arguments",
+                  "data": "rest"
+                },
+                {
+                  "name": "returnValues",
+                  "data": [
+                    "outType"
+                  ]
+                }
+              ]
+            },
+            "node": "#cj2967ia4001y7vlu0t01tbd8"
           },
           "to": {
             "port": "inFalse",
@@ -861,19 +973,19 @@
                 {
                   "name": "returnValues",
                   "data": [
-                    "Number"
+                    "generic"
                   ]
                 }
               ]
             },
-            "node": "#cj1fb6l8w0008img229s2gkmt"
+            "node": "#cj2967gck00087vluff7nh3vy"
           },
           "layer": "dataflow"
         },
         {
           "from": {
             "type": "Bool",
-            "node": "#cj1fb6jdb0001iag23hnhnqkk",
+            "node": "#cj2967fjg00017tlu0a8l6pkn",
             "port": "isLess",
             "kind": "output"
           },
@@ -881,7 +993,7 @@
             "port": "condition",
             "kind": "input",
             "type": "Bool",
-            "node": "#cj1fb6l8w0008img229s2gkmt"
+            "node": "#cj2967gck00087vluff7nh3vy"
           },
           "layer": "dataflow"
         },
@@ -889,12 +1001,12 @@
           "from": {
             "port": "choice",
             "kind": "output",
-            "type": "Number",
-            "node": "#cj1fb6l8w0008img229s2gkmt"
+            "type": "generic",
+            "node": "#cj2967gck00087vluff7nh3vy"
           },
           "to": {
-            "type": "Number",
-            "node": "#cj1fb6j3b000di9g2shgakg91",
+            "type": "generic",
+            "node": "#cj2967fhk000d7slu14lp31lu",
             "port": "value"
           },
           "layer": "dataflow",
@@ -905,44 +1017,24 @@
       "atomic": false,
       "version": "0.0.0",
       "componentId": "fac",
-      "ports": [
-        {
-          "port": "n",
-          "kind": "input",
-          "type": "Number",
-          "node": "#cj1fb6j3b000di9g2shgakg91"
-        },
-        {
-          "port": "value",
-          "kind": "output",
-          "type": "Number",
-          "node": "#cj1fb6j3b000di9g2shgakg91"
-        }
-      ],
-      "id": "#cj1fb6j3b000di9g2shgakg91",
+      "id": "#cj2967fhk000d7slu14lp31lu",
       "path": [
-        "#cj1fb6j3b000di9g2shgakg91"
+        "#cj2967fhk000d7slu14lp31lu"
       ]
     }
   ],
-  "metaInformation": {
-    "parameters": {
-      "typings": {
-        "generic": "IO"
-      }
-    }
-  },
+  "metaInformation": {},
   "edges": [
     {
       "from": {
         "type": "generic",
-        "node": "#cj1fb6j3c000ei9g26lmt6bak",
+        "node": "#cj2967fhk000e7slu5gylsm3w",
         "port": "const",
         "kind": "output"
       },
       "to": {
-        "type": "generic",
-        "node": "#cj1fb6j3b000di9g2shgakg91",
+        "type": "generic0",
+        "node": "#cj2967fhk000d7slu14lp31lu",
         "port": "n",
         "kind": "input"
       },
@@ -950,14 +1042,14 @@
     },
     {
       "from": {
-        "type": "generic",
-        "node": "#cj1fb6j3b000di9g2shgakg91",
+        "type": "generic1",
+        "node": "#cj2967fhk000d7slu14lp31lu",
         "port": "value",
         "kind": "output"
       },
       "to": {
         "type": "Number",
-        "node": "#cj1fb6j3b000ci9g24kzery4o",
+        "node": "#cj2967fhj000c7slu6y2cvfbr",
         "port": "inNumber",
         "kind": "input"
       },
@@ -966,13 +1058,13 @@
     {
       "from": {
         "type": "String",
-        "node": "#cj1fb6j3b000ci9g24kzery4o",
+        "node": "#cj2967fhj000c7slu6y2cvfbr",
         "port": "outStr",
         "kind": "output"
       },
       "to": {
         "type": "String",
-        "node": "#cj1fb6j3a000bi9g2esslu3ip",
+        "node": "#cj2967fhj000b7slu8oh9jfvo",
         "port": "text",
         "kind": "input"
       },
@@ -981,12 +1073,12 @@
     {
       "from": {
         "type": "generic",
-        "node": "#cj1fb6j3a000ai9g2txhudwwi",
+        "node": "#cj2967fhj000a7slu0cxl9kx0",
         "port": "IO"
       },
       "to": {
         "type": "IO",
-        "node": "#cj1fb6j3a000bi9g2esslu3ip",
+        "node": "#cj2967fhj000b7slu8oh9jfvo",
         "port": "IO_in",
         "kind": "input"
       },
@@ -996,13 +1088,13 @@
     {
       "from": {
         "type": "IO",
-        "node": "#cj1fb6j3a000bi9g2esslu3ip",
+        "node": "#cj2967fhj000b7slu8oh9jfvo",
         "port": "IO_out",
         "kind": "output"
       },
       "to": {
         "type": "generic",
-        "node": "#cj1fb6j3a000ai9g2txhudwwi",
+        "node": "#cj2967fhj000a7slu0cxl9kx0",
         "port": "value"
       },
       "layer": "dataflow",
@@ -1015,19 +1107,21 @@
         {
           "ref": "if",
           "ports": [],
-          "id": "#cj1fb6iyr0002i9g22ysxky56",
+          "id": "#cj2967feb00027slu0uha9emt",
+          "metaInformation": {},
           "settings": {},
           "path": [
-            "#cj1fb6iyr0002i9g22ysxky56"
+            "#cj2967feb00027slu0uha9emt"
           ]
         },
         {
           "ref": "math/less",
           "ports": [],
-          "id": "#cj1fb6iyw0003i9g2qs6tte8d",
+          "id": "#cj2967fee00037sluq5oq4usn",
+          "metaInformation": {},
           "settings": {},
           "path": [
-            "#cj1fb6iyw0003i9g2qs6tte8d"
+            "#cj2967fee00037sluq5oq4usn"
           ]
         },
         {
@@ -1038,11 +1132,11 @@
               "value": 1
             }
           },
-          "id": "#cj1fb6izk0004i9g21c0ilpav",
+          "id": "#cj2967feq00047slus305fz8x",
           "settings": {},
           "ports": [],
           "path": [
-            "#cj1fb6izk0004i9g21c0ilpav"
+            "#cj2967feq00047slus305fz8x"
           ]
         },
         {
@@ -1053,38 +1147,41 @@
               "value": 1
             }
           },
-          "id": "#cj1fb6j0k0005i9g20ornk0nf",
+          "id": "#cj2967ffl00057sluq9thq6pe",
           "settings": {},
           "ports": [],
           "path": [
-            "#cj1fb6j0k0005i9g20ornk0nf"
+            "#cj2967ffl00057sluq9thq6pe"
           ]
         },
         {
           "ref": "math/multiply",
           "ports": [],
-          "id": "#cj1fb6j0z0006i9g28gnve182",
+          "id": "#cj2967ffz00067slui1x9oay6",
+          "metaInformation": {},
           "settings": {},
           "path": [
-            "#cj1fb6j0z0006i9g28gnve182"
+            "#cj2967ffz00067slui1x9oay6"
           ]
         },
         {
           "ref": "fac",
           "ports": [],
-          "id": "#cj1fb6j1d0007i9g2xl8c645a",
+          "id": "#cj2967fg900077slulovv5x8z",
+          "metaInformation": {},
           "settings": {},
           "path": [
-            "#cj1fb6j1d0007i9g2xl8c645a"
+            "#cj2967fg900077slulovv5x8z"
           ]
         },
         {
           "ref": "math/add",
           "ports": [],
-          "id": "#cj1fb6j1d0008i9g2bn0ryevg",
+          "id": "#cj2967fg900087sluolmpdkf6",
+          "metaInformation": {},
           "settings": {},
           "path": [
-            "#cj1fb6j1d0008i9g2bn0ryevg"
+            "#cj2967fg900087sluolmpdkf6"
           ]
         },
         {
@@ -1095,11 +1192,11 @@
               "value": -1
             }
           },
-          "id": "#cj1fb6j1p0009i9g2067dbg2c",
+          "id": "#cj2967fgj00097sluuvgr69dk",
           "settings": {},
           "ports": [],
           "path": [
-            "#cj1fb6j1p0009i9g2067dbg2c"
+            "#cj2967fgj00097sluuvgr69dk"
           ]
         }
       ],
@@ -1108,12 +1205,12 @@
         {
           "from": {
             "type": "generic",
-            "node": "#cj1fb6iyn0001i9g2nyq0biqs",
+            "node": "#cj2967fe800017slu9pag5idw",
             "port": "n"
           },
           "to": {
             "type": "generic",
-            "node": "#cj1fb6iyw0003i9g2qs6tte8d",
+            "node": "#cj2967fee00037sluq5oq4usn",
             "port": "0"
           },
           "layer": "dataflow",
@@ -1122,12 +1219,12 @@
         {
           "from": {
             "type": "generic",
-            "node": "#cj1fb6izk0004i9g21c0ilpav",
+            "node": "#cj2967feq00047slus305fz8x",
             "port": "0"
           },
           "to": {
             "type": "generic",
-            "node": "#cj1fb6iyw0003i9g2qs6tte8d",
+            "node": "#cj2967fee00037sluq5oq4usn",
             "port": "1"
           },
           "layer": "dataflow"
@@ -1135,12 +1232,12 @@
         {
           "from": {
             "type": "generic",
-            "node": "#cj1fb6iyw0003i9g2qs6tte8d",
+            "node": "#cj2967fee00037sluq5oq4usn",
             "port": "0"
           },
           "to": {
             "type": "generic",
-            "node": "#cj1fb6iyr0002i9g22ysxky56",
+            "node": "#cj2967feb00027slu0uha9emt",
             "port": "0"
           },
           "layer": "dataflow"
@@ -1148,12 +1245,12 @@
         {
           "from": {
             "type": "generic",
-            "node": "#cj1fb6j0k0005i9g20ornk0nf",
+            "node": "#cj2967ffl00057sluq9thq6pe",
             "port": "0"
           },
           "to": {
             "type": "generic",
-            "node": "#cj1fb6iyr0002i9g22ysxky56",
+            "node": "#cj2967feb00027slu0uha9emt",
             "port": "1"
           },
           "layer": "dataflow"
@@ -1161,12 +1258,12 @@
         {
           "from": {
             "type": "generic",
-            "node": "#cj1fb6iyn0001i9g2nyq0biqs",
+            "node": "#cj2967fe800017slu9pag5idw",
             "port": "n"
           },
           "to": {
             "type": "generic",
-            "node": "#cj1fb6j0z0006i9g28gnve182",
+            "node": "#cj2967ffz00067slui1x9oay6",
             "port": "0"
           },
           "layer": "dataflow",
@@ -1175,12 +1272,12 @@
         {
           "from": {
             "type": "generic",
-            "node": "#cj1fb6iyn0001i9g2nyq0biqs",
+            "node": "#cj2967fe800017slu9pag5idw",
             "port": "n"
           },
           "to": {
             "type": "generic",
-            "node": "#cj1fb6j1d0008i9g2bn0ryevg",
+            "node": "#cj2967fg900087sluolmpdkf6",
             "port": "0"
           },
           "layer": "dataflow",
@@ -1189,12 +1286,12 @@
         {
           "from": {
             "type": "generic",
-            "node": "#cj1fb6j1p0009i9g2067dbg2c",
+            "node": "#cj2967fgj00097sluuvgr69dk",
             "port": "0"
           },
           "to": {
             "type": "generic",
-            "node": "#cj1fb6j1d0008i9g2bn0ryevg",
+            "node": "#cj2967fg900087sluolmpdkf6",
             "port": "1"
           },
           "layer": "dataflow"
@@ -1202,12 +1299,12 @@
         {
           "from": {
             "type": "generic",
-            "node": "#cj1fb6j1d0008i9g2bn0ryevg",
+            "node": "#cj2967fg900087sluolmpdkf6",
             "port": "0"
           },
           "to": {
             "type": "generic",
-            "node": "#cj1fb6j1d0007i9g2xl8c645a",
+            "node": "#cj2967fg900077slulovv5x8z",
             "port": "0"
           },
           "layer": "dataflow"
@@ -1215,12 +1312,12 @@
         {
           "from": {
             "type": "generic",
-            "node": "#cj1fb6j1d0007i9g2xl8c645a",
+            "node": "#cj2967fg900077slulovv5x8z",
             "port": "0"
           },
           "to": {
             "type": "generic",
-            "node": "#cj1fb6j0z0006i9g28gnve182",
+            "node": "#cj2967ffz00067slui1x9oay6",
             "port": "1"
           },
           "layer": "dataflow"
@@ -1228,12 +1325,12 @@
         {
           "from": {
             "type": "generic",
-            "node": "#cj1fb6j0z0006i9g28gnve182",
+            "node": "#cj2967ffz00067slui1x9oay6",
             "port": "0"
           },
           "to": {
             "type": "generic",
-            "node": "#cj1fb6iyr0002i9g22ysxky56",
+            "node": "#cj2967feb00027slu0uha9emt",
             "port": "2"
           },
           "layer": "dataflow"
@@ -1241,12 +1338,12 @@
         {
           "from": {
             "type": "generic",
-            "node": "#cj1fb6iyr0002i9g22ysxky56",
+            "node": "#cj2967feb00027slu0uha9emt",
             "port": "0"
           },
           "to": {
             "type": "generic",
-            "node": "#cj1fb6iyn0001i9g2nyq0biqs",
+            "node": "#cj2967fe800017slu9pag5idw",
             "port": "value"
           },
           "layer": "dataflow",
@@ -1259,18 +1356,18 @@
         {
           "port": "n",
           "kind": "input",
-          "type": "generic",
-          "node": "#cj1fb6iyn0001i9g2nyq0biqs"
+          "type": "generic0",
+          "node": "#cj2967fe800017slu9pag5idw"
         },
         {
           "port": "value",
           "kind": "output",
-          "type": "generic",
-          "node": "#cj1fb6iyn0001i9g2nyq0biqs"
+          "type": "generic1",
+          "node": "#cj2967fe800017slu9pag5idw"
         }
       ],
       "atomic": false,
-      "id": "#cj1fb6iyn0001i9g2nyq0biqs",
+      "id": "#cj2967fe800017slu9pag5idw",
       "version": "0.0.0",
       "componentId": "fac"
     },
@@ -1420,32 +1517,22 @@
     }
   ],
   "path": [],
-  "atomic": false,
-  "id": "#cj1fb6j3a000ai9g2txhudwwi",
-  "version": "0.0.0",
-  "componentId": "main",
-  "assignments": {
-    "generic.#cj1fb6j3c000ei9g26lmt6bak": "Number",
-    "generic.#cj1fb6jdc0002iag2im54xiyc": "Number",
-    "generic.#cj1fb6jdc0003iag242mdhsib": "Number",
-    "generic.#cj1fb6jdd0007iag2rg2nayke": "Number",
-    "generic.#cj1fb6j3b000di9g2shgakg91": "Number",
-    "generic.#cj1fb6jda0000iag2yenmcu69": "Number",
-    "generic.#cj1fb6jdc0005iag2aji68q7m": "Number",
-    "generic.#cj1fb6j3a000ai9g2txhudwwi": "IO"
-  },
   "ports": [
     {
       "port": "IO",
       "kind": "input",
-      "type": "IO",
-      "node": "#cj1fb6j3a000ai9g2txhudwwi"
+      "type": "generic0",
+      "node": "#cj2967fhj000a7slu0cxl9kx0"
     },
     {
       "port": "value",
       "kind": "output",
-      "type": "IO",
-      "node": "#cj1fb6j3a000ai9g2txhudwwi"
+      "type": "generic1",
+      "node": "#cj2967fhj000a7slu0cxl9kx0"
     }
-  ]
+  ],
+  "atomic": false,
+  "id": "#cj2967fhj000a7slu0cxl9kx0",
+  "version": "0.0.0",
+  "componentId": "main"
 }
