@@ -165,8 +165,8 @@ export function isValid (edge) {
  */
 export function isBetweenPorts (edge) {
   return typeof (edge) === 'object' &&
-    Port.isValid(Object.assign({type: '-', kind: 'input'}, edge.from)) &&
-    Port.isValid(Object.assign({type: '-', kind: 'output'}, edge.to))
+    typeof (edge.from) === 'object' && edge.from.port &&
+    typeof (edge.to) === 'object' && edge.to.port
 }
 
 /**
