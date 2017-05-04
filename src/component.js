@@ -151,14 +151,21 @@ export function assertValid (comp) {
 }
 
 const mapEdgeIDs = curry((map, edge) => {
-  return merge(edge, {
-    from: {
-      node: (map[edge.from.node]) ? map[edge.from.node] : edge.from.node
-    },
-    to: {
-      node: (map[edge.to.node]) ? map[edge.to.node] : edge.to.node
-    }
-  })
+  if (typeof (edge.from) === 'object' && typeof (edge.to) === 'object') {
+    return merge(edge, {
+      from: {
+        node: (map[edge.from.node]) ? map[edge.from.node] : edge.from.node
+      },
+      to: {
+        node: (map[edge.to.node]) ? map[edge.to.node] : edge.to.node
+      }
+    })
+  } else {
+    return merge(edge, {
+      from: (map[edge.from]) ? map[edge.from] : edge.from,
+      to: (map[edge.to]) ? map[edge.to] : edge.to
+    })
+  }
 })
 
 /**

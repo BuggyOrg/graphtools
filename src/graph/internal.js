@@ -13,7 +13,7 @@ import omit from 'lodash/fp/omit'
 import merge from 'lodash/fp/merge'
 import * as Node from '../node'
 import {equal as pathEqual, isRoot, relativeTo, join} from '../compoundPath'
-import {setPath as compoundSetPath} from '../compound'
+import {setPath as compoundSetPath, isCompound} from '../compound'
 import * as changeSet from '../changeSet'
 import {flowCallback} from './flow'
 
@@ -157,7 +157,12 @@ export const unID = (node) => {
 
 export function addNodeInternal (node, graph, checkNode, ...cbs) {
   const cb = flowCallback(cbs)
-  var newNode = setPath(Node.create(unID(node)), Node.path(graph))
+  var newNode
+  if (isCompound(node)) {
+    newNode = setPath(Node.create(unID(node)), Node.path(graph))
+  } else {
+    newNode = setPath(Node.create(unID(node)), Node.path(graph))
+  }
   checkNode(graph, newNode)
   if (Node.hasChildren(newNode)) {
     newNode = set('edges', replaceEdgeIDs(newNode.edges, newNode.id, node.id), newNode)
