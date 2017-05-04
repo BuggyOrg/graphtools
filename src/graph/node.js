@@ -11,6 +11,7 @@ import {flow, flowCallback, Let, sequential} from './flow'
 import {nodeBy, mergeNodes, rePath, addNodeInternal, unID, nodesDeep} from './internal'
 import {query, toString} from '../location'
 import {incidents} from './connections'
+import {createNode} from '../component'
 import {removeEdge, realizeEdgesForNode} from './edge'
 
 /**
@@ -155,7 +156,7 @@ export function checkNode (graph, nodeToCheck) {
  * @param {PortGraph} graph The graph that is the root for the nodePath
  * @returns {PortGraph} A new graph that contains the node at the specific path.
  */
-export const addNodeByPath = curry((parentPath, nodeData, graph, ...cbs) => {
+const addNodeByPath = curry((parentPath, nodeData, graph, ...cbs) => {
   const cb = flowCallback(cbs)
   var newNode
   var newGraph
@@ -189,7 +190,7 @@ export const addNodeIn = curry((parentLoc, nodeData, graph, ...cbs) => {
   if (Node.isAtomic(node(parentLoc, graph))) {
     throw new Error('Cannot add Node to atomic node at: ' + graph.path)
   }
-  return addNodeByPath(Node.path(node(parentLoc, graph)), nodeData, graph, ...cbs)
+  return addNodeByPath(Node.path(createNode({}, node(parentLoc, graph))), nodeData, graph, ...cbs)
 })
 
 /**
@@ -223,7 +224,7 @@ export const addNode = curry((node, graph, ...cbs) => {
   if (Node.isAtomic(graph)) {
     throw new Error('Cannot add Node to atomic node at: ' + graph.path)
   }
-  return addNodeInternal(node, graph, checkNode, ...cbs)
+  return addNodeInternal(createNode({}, node), graph, checkNode, ...cbs)
 })
 
 export const addNodeWithID = curry((node, graph, ...cbs) => {

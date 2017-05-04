@@ -7,7 +7,7 @@ module.exports = (wallaby) => {
     ],
     tests: [
       {pattern: 'test/**/*.js', load: true}
-      // {pattern: 'test/graph/node.js', load: true}
+      // {pattern: 'test/graph/edge.js', load: true}
     ],
     env: {
       type: 'node',
