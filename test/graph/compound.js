@@ -301,7 +301,10 @@ describe('Basic graph functions', () => {
         Graph.Let(Graph.addNode(impl), (node, graph) =>
           Graph.addNodeIn(node, impl, graph))
       )()
-      require('../../src/debug').debug(graph)
+      expect(Graph.hasNode('»c»a', graph)).to.be.true
+      expect(Graph.hasNode('»c»b', graph)).to.be.true
+      expect(Graph.hasNode('»c»c»a', graph)).to.be.true
+      expect(Graph.hasNode('»c»c»b', graph)).to.be.true
     })
 
     it('replaces all IDs inside a compound', () => {
@@ -315,7 +318,10 @@ describe('Basic graph functions', () => {
         Graph.Let(Graph.addNodeIn(emptyGraph, impl), (node, graph) =>
           Graph.addNodeIn(node, impl, graph))
       )(emptyGraph)
-      require('../../src/debug').debug(graph)
+      expect(Graph.hasNode('»c»a', graph)).to.be.true
+      expect(Graph.hasNode('»c»b', graph)).to.be.true
+      expect(Graph.hasNode('»c»c»a', graph)).to.be.true
+      expect(Graph.hasNode('»c»c»b', graph)).to.be.true
     })
   })
 })
