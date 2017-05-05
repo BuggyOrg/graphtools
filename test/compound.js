@@ -29,6 +29,15 @@ describe('Compound API', () => {
     expect(Compound.hasPort('b', remCmp)).to.be.true
   })
 
+  it('Ignores edges that are not between ports', () => {
+    var cmp1 = Compound.addInputPort('a', Compound.create())
+    var cmp2 = Compound.addOutputPort('b', cmp1)
+    cmp2.edges.push({from: '#id1', to: '#id2', layer: 'not-data-flow'})
+    var remCmp = Compound.removePort('a', cmp2)
+    expect(Compound.hasPort('a', remCmp)).to.be.false
+    expect(Compound.hasPort('b', remCmp)).to.be.true
+  })
+
   it('Removes all edges from/to a port when removing the port', () => {
     var cmp1 = Compound.addInputPort('a', Compound.create())
     var cmp2 = Compound.addOutputPort('b', cmp1)
