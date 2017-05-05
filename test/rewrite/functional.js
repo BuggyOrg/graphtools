@@ -39,6 +39,22 @@ describe('Rewrite basic API', () => {
         expect(Graph.hasNode('/call', fn)).to.be.true
       })
 
+      it('The callback returns a the created call node', () => {
+        var graph = Graph.flow(
+          Graph.addNode({name: 'a', ports: [{port: 'out', kind: 'output', type: 'g'}], atomic: true}),
+          Graph.addNode({name: 'b', ports: [{port: 'out', kind: 'output', type: 'g'}, {port: 'in', kind: 'input', type: 'g'}], atomic: true}),
+          Graph.addNode({name: 'c', ports: [{port: 'in', kind: 'input', type: 'g'}], atomic: true}),
+          Graph.addEdge({from: 'a@out', to: 'b@in'}),
+          Graph.addEdge({from: 'b@out', to: 'c@in'})
+        )()
+        const fn = Functional.replaceByCall(graph, ['b', 'a'], graph, (callNode, graph) => {
+          expect(callNode.componentId).to.equal('call')
+          return graph
+        })
+        expect(Graph.hasNode('/functional/lambda', fn)).to.be.true
+        expect(Graph.hasNode('/call', fn)).to.be.true
+      })
+
       it('Can create a lambda function out of an compound with one input partial', () => {
         var graph = Graph.flow(
           Graph.addNode({name: 'a', ports: [{port: 'out', kind: 'output', type: 'g'}], atomic: true}),
