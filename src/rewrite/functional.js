@@ -92,13 +92,15 @@ export const createInputPartials = curry((context, graph, ...cbs) => {
   return createInputPartialsInternal(context.inputs, context.parent, context.lambda)(graph, ...cbs)
 })
 
-const createCall = ([context, last], graph) =>
-  Graph.Let(Graph.addNodeIn(context.parent, createFunctionCall(context.outputs)), (call, graph) =>
-    Graph.flow(
+const createCall = ([context, last], graph, ...cbs) => {
+  const cb = Graph.flowCallback(cbs)
+  return Graph.Let(Graph.addNodeIn(context.parent, createFunctionCall(context.outputs)), (call, graph) =>
+    cb(call, Graph.flow(
       Graph.addEdge({from: Node.port('fn', last), to: Node.port('fn', call)}),
       flatten(context.outputs.map(([port, succ]) =>
         succ.map((s) => Graph.addEdge({from: Node.port(port, call), to: s}))))
-    )(graph))(graph)
+    )(graph)))(graph)
+}
 
 /**
  * Takes a subset of nodes (all of them must have the same parent) and replaces them
@@ -107,11 +109,12 @@ const createCall = ([context, last], graph) =>
  * @param {Array<Location>} subset A subset of locations identifying nodes which will be replaced by
  * a lambda call.
  * @param {Portgraph} graph The graph
+ * @param {Callback} [cb] A callback that is called after the call is created with the newly created call.
  * @returns {Portgraph} A new graph in which the subset was replaced by a call to a lambda
  * function.
  */
-export const replaceByCall = curry((parent, subset, graph) =>
-  replaceByThunk(parent, subset, graph, createCall))
+export const replaceByCall = curry((parent, subset, graph, ...cbs) =>
+  replaceByThunk(parent, subset, graph, (payload, graph) => createCall(payload, graph, ...cbs)))
 
 const ternaryPack = (fn) =>
   curry((a, b, graph) => {
