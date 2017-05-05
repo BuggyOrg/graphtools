@@ -3,8 +3,6 @@
 import omit from 'lodash/fp/omit'
 import merge from 'lodash/fp/merge'
 import curry from 'lodash/fp/curry'
-import negate from 'lodash/fp/negate'
-// import {isReference, id as nodeID, hasPort, inputPorts, outputPorts, ports, component} from './node'
 import * as Node from './node'
 import * as Edge from './edge'
 import * as Port from './port'
@@ -126,7 +124,8 @@ export const renamePort = curry((port, newName, node) => {
  */
 export const removePort = curry((port, node) => {
   port = getPort(port, node)
-  var portEdges = edgesDeep(node).filter((e) => pointsTo(port, node, e) || isFrom(port, node, e))
+  // var portEdges = edgesDeep(node).filter((e) => (pointsTo(port, node, e) || isFrom(port, node, e)))
+  var portEdges = edgesDeep(node).filter((e) => Edge.isBetweenPorts(e) && (pointsTo(port, node, e) || isFrom(port, node, e)))
   var newNode = portEdges.reduce((cmp, edge) => removeEdge(edge, cmp), node)
   return merge(omit(['ports', 'componentId'], newNode),
     {ports: Node.ports(newNode).filter((p) => port.port !== p.port)})

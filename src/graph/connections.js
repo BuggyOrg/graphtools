@@ -18,11 +18,15 @@ import { kind } from '../port'
  * @returns {boolean} True if the edge points to the target, false otherwise.
  */
 export const pointsTo = curry((target, graph, edge) => {
-  var q = query(target, graph)
-  if (typeof (edge.to) === 'string') {
-    return q(node(edge.to, graph))
+  try {
+    var q = query(target, graph)
+    if (typeof (edge.to) === 'string') {
+      return q(node(edge.to, graph))
+    }
+    return q(merge(edge.to, {additionalInfo: node(edge.to, graph)}))
+  } catch (err) {
+    return false
   }
-  return q(merge(edge.to, {additionalInfo: node(edge.to, graph)}))
 })
 
 /**
@@ -35,11 +39,15 @@ export const pointsTo = curry((target, graph, edge) => {
  * @returns {boolean} True if the edge comes from the source, false otherwise.
  */
 export const isFrom = curry((source, graph, edge) => {
-  var q = query(source, graph)
-  if (typeof (edge.from) === 'string') {
-    return q(node(edge.from, graph))
+  try {
+    var q = query(source, graph)
+    if (typeof (edge.from) === 'string') {
+      return q(node(edge.from, graph))
+    }
+    return q(merge(edge.from, {additionalInfo: node(edge.from, graph)}))
+  } catch (err) {
+    return false
   }
-  return q(merge(edge.from, {additionalInfo: node(edge.from, graph)}))
 })
 
 /**
