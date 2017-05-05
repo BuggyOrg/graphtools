@@ -190,7 +190,7 @@ export const addNodeIn = curry((parentLoc, nodeData, graph, ...cbs) => {
   if (Node.isAtomic(node(parentLoc, graph))) {
     throw new Error('Cannot add Node to atomic node at: ' + graph.path)
   }
-  return addNodeByPath(Node.path(createNode({}, node(parentLoc, graph))), nodeData, graph, ...cbs)
+  return addNodeByPath(Node.path(node(parentLoc, graph)), createNode({}, nodeData), graph, ...cbs)
 })
 
 /**

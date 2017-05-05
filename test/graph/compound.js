@@ -303,5 +303,19 @@ describe('Basic graph functions', () => {
       )()
       require('../../src/debug').debug(graph)
     })
+
+    it('replaces all IDs inside a compound', () => {
+      var impl = Graph.flow(
+        Graph.addNode({name: 'a', ports: [{port: 'out', kind: 'output', type: 'number'}], atomic: true}),
+        Graph.addNode({name: 'b', ports: [{port: 'in', kind: 'input', type: 'number'}], atomic: true}),
+        Graph.addEdge({from: 'a@out', to: 'b@in'})
+      )(Graph.compound({name: 'c', ports: [{port: 'out', kind: 'output', type: 'string'}]}))
+      const emptyGraph = Graph.empty()
+      var graph = Graph.flow(
+        Graph.Let(Graph.addNodeIn(emptyGraph, impl), (node, graph) =>
+          Graph.addNodeIn(node, impl, graph))
+      )(emptyGraph)
+      require('../../src/debug').debug(graph)
+    })
   })
 })
