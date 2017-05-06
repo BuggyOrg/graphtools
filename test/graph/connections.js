@@ -113,6 +113,28 @@ describe('Basic graph functions', () => {
         const succLeftFull = Graph.successors('left', graph, { layers: ['extra', 'dataflow'] })
         expect(succLeftFull).to.have.lengthOf(2)
       })
+
+      it('finds edges that connect compound inputs with outputs', () => {
+        var comp = Graph.addEdge({from: '@inC', to: '@outC'},
+          Graph.compound({name: 'c', ports: [{port: 'inC', kind: 'input'}, {port: 'outC', kind: 'output'}]}))
+        var graph = Graph.flow(
+          Graph.Let(
+            [
+              Graph.addNode({ports: [{port: 'outA', kind: 'output'}, {port: 'inA', kind: 'input'}], componentId: 'moved'}),
+              Graph.addNode(comp),
+              Graph.addNode({ports: [{port: 'outF', kind: 'output'}]})
+            ], ([n1, n2, n3], graph) =>
+            Graph.flow(
+              Graph.addEdge({from: n1.id + '@outA', to: n2.id + '@inC'}),
+              Graph.addEdge({from: n3.id + '@outF', to: n1.id + '@inA'})
+            )(graph))
+        )()
+        expect(Graph.nodes(graph)).to.have.length(3)
+        expect(Graph.nodes(Graph.node('c', graph))).to.have.length(0)
+        var out = Graph.successors({node: 'c', port: 'inC'}, graph)
+        expect(out).to.have.length(1)
+        expect(Graph.node(out, graph).name).to.equal('c')
+      })
     })
 
     describe('.areConnected', () => {

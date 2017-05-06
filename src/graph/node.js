@@ -88,7 +88,7 @@ export function nodeNames (graph) {
  * @returns {Node} The node in the graph
  * @throws {Error} If the queried node does not exist in the graph.
  */
-export const node = curry((loc, graph) => {
+export const node = (loc, graph) => {
   try {
     var node = nodeBy(query(loc, graph), graph)
   } catch (err) {
@@ -98,7 +98,7 @@ export const node = curry((loc, graph) => {
     throw new Error(`Node: '${Node.id(loc) || JSON.stringify(loc)}' does not exist in the graph.`)
   }
   return node
-})
+}
 
 /**
  * @function
@@ -109,16 +109,16 @@ export const node = curry((loc, graph) => {
  * @returns {Node} The actual port object with type information.
  * @throws {Error} If the queried port does not exist in the graph.
  */
-export const port = curry((port, graph) => {
-  var nodeObj = node(port, graph)
-  return Node.port(normalizePort(port), nodeObj)
-})
+export const port = (p, graph) => {
+  var nodeObj = node(p, graph)
+  return Node.port(normalizePort(p), nodeObj)
+}
 
-export const hasPort = curry((port, graph) => {
+export const hasPort = (port, graph) => {
   if (!hasNode(port, graph)) return false
   var nodeObj = node(port, graph)
   return Node.hasPort(normalizePort(port), nodeObj)
-})
+}
 
 /**
  * @function
@@ -128,9 +128,9 @@ export const hasPort = curry((port, graph) => {
  * @param {PortGraph} graph The graph.
  * @returns {boolean} True if the graph has a node with the given id, false otherwise.
  */
-export const hasNode = curry((loc, graph) => {
+export const hasNode = (loc, graph) => {
   return !!nodeBy(query(loc, graph), graph)
-})
+}
 
 export function checkNode (graph, nodeToCheck) {
   if (hasNode(unID(nodeToCheck), graph) && !equal(node(unID(nodeToCheck), graph).path, graph.path) && !Node.equal(nodeToCheck, graph)) {

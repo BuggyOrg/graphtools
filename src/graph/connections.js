@@ -3,9 +3,9 @@ import map from 'lodash/fp/map'
 import curry from 'lodash/fp/curry'
 import merge from 'lodash/fp/merge'
 import * as Edge from '../edge'
-import { edgesDeep } from './edge'
+import { edgesDeep, edges } from './edge'
 import { query } from '../location'
-import { node, port, hasPort } from '../graph/node'
+import { node, port, hasPort, parent } from '../graph/node'
 import { kind } from '../port'
 
 /**
@@ -105,8 +105,19 @@ export function predecessor (target, graph, config = { layers: ['dataflow'], goI
  * @returns {Edge[]} An array of all ingoing (i.e. pointsTo(port)) incident edges.
  */
 export function inIncidents (target, graph, { layers = ['dataflow'], goIntoCompounds = false } = {}) {
-  return edgesDeep(graph).filter((e) => layers.some(l => l === e.layer) && (Edge.isBetweenPorts(e) || e.layer !== 'dataflow') &&
-  pointsTo(target, graph, e) && (e.layer !== 'dataflow' || goIntoCompounds || hasPort(target, graph) || kind(port(e.to, graph)) === 'input'))
+  const filterFn = (e) => layers.some(l => l === e.layer) && (Edge.isBetweenPorts(e) || e.layer !== 'dataflow') &&
+    pointsTo(target, graph, e) && (e.layer !== 'dataflow' || goIntoCompounds || hasPort(target, graph) || kind(port(e.to, graph)) === 'input')
+  if (layers.length === 1 && layers[0] === 'dataflow' && !goIntoCompounds) {
+    const n = node(target, graph)
+    if (hasPort(target, graph)) {
+      const p = port(target, graph)
+      if (p.node === n.id && kind(p) === 'output') {
+        return edges(n).filter(filterFn)
+      }
+    }
+    return edges(parent(n, graph) || graph).filter(filterFn)
+  }
+  return edgesDeep(graph).filter(filterFn)
 }
 
 /**
@@ -136,10 +147,21 @@ export function inIncident (target, graph, config = { layers: ['dataflow'], goIn
  * @returns {Edge[]} An array of all outgoing (i.e. isFrom(port)) incident edges.
  */
 export function outIncidents (source, graph, { layers = ['dataflow'], goIntoCompounds = false } = {}) {
-  return edgesDeep(graph).filter((e) => {
+  const filterFn = (e) => {
     return layers.some(l => l === e.layer) && (Edge.isBetweenPorts(e) || e.layer !== 'dataflow') && isFrom(source, graph, e) &&
       (e.layer !== 'dataflow' || goIntoCompounds || hasPort(source, graph) || kind(port(e.from, graph)) === 'output')
-  })
+  }
+  if (layers.length === 1 && layers[0] === 'dataflow' && !goIntoCompounds) {
+    const n = node(source, graph)
+    if (hasPort(source, graph)) {
+      const p = port(source, graph)
+      if (p.node === n.id && kind(p) === 'input') {
+        return edges(n).filter(filterFn)
+      }
+    }
+    return edges(parent(n, graph) || graph).filter(filterFn)
+  }
+  return edgesDeep(graph).filter(filterFn)
 }
 
 /**

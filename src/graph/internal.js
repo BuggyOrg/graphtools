@@ -38,13 +38,13 @@ function nodesDeepInternal (graph) {
     .concat(nodesDeepRec(graph, nodes(graph)))
 }
 
-function store (what, key, graph) {
+export function store (what, key, graph) {
   if (!graph.___store) initStore(graph)
   graph.___store[key] = what
   return what
 }
 
-function access (key, graph) {
+export function access (key, graph) {
   return (graph.___store) ? graph.___store[key] : undefined
 }
 

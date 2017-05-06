@@ -5,6 +5,16 @@
   "version": "0.2.0",
   "configurations": [
     {
+      "type": "node",
+      "request": "launch",
+      "protocol": "inspector",
+      "name": "Launch Program",
+      "program": "${workspaceRoot}/perf/test.js",
+      "skipFiles": [
+        "node_modules/lodash/**/*"
+      ]
+    },
+    {
       "name": "Mocha",
       "type": "node",
       "request": "launch",

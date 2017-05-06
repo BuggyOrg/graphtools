@@ -10,19 +10,23 @@ import {debug} from '../debug'
 
 /**
  * Returns a topological sorting of the graph.
+ * @param {Node} compound A compound node to perform the topological sort in. The sorting is only
+ * considering nodes directly inside the compound. It does not go into further compounds.
  * @param {PortGraph} graph The graph.
  * @return {Node[]} A sorting of the nodes given as an array of nodes.
  * @throws {Error} If the graph has loops.
  */
-export default function topologicalSort (graph) {
-  // Calculate predecessour counts
+export default function topologicalSort (compound, graph) {
+  // be backwards compatible
+  if (!graph) graph = compound
+  // Calculate predecessor counts
   const predecessorCount = {}
-  for (const node of Graph.nodes(graph)) {
+  for (const node of Graph.nodes(compound)) {
     predecessorCount[node.id] = 0
   }
-  for (const node of Graph.nodes(graph)) {
+  for (const node of Graph.nodes(compound)) {
     for (const successor of Graph.successors(node, graph)) {
-      if (successor.node !== graph.id) {
+      if (successor.node !== compound.id) {
         predecessorCount[successor.node]++
       }
     }
@@ -41,7 +45,7 @@ export default function topologicalSort (graph) {
 
     // if there is no such element, topological sorting is not possible because there are cycles
     if (nextElement == null) {
-      debug(graph, true)
+      debug(compound, true)
       throw new Error('Found cycle in the graph. Impossible to calculate topological sorting.')
     }
 
@@ -52,7 +56,7 @@ export default function topologicalSort (graph) {
     // decrease the predecessor count of every successor of that node
     // this may produce new nodes with a predecessour count of 0
     for (const successor of Graph.successors(nextElement, graph)) {
-      if (successor.node !== graph.id) {
+      if (successor.node !== compound.id) {
         predecessorCount[successor.node]--
       }
     }

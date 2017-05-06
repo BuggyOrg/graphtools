@@ -1,9 +1,7 @@
 {
-  "presets": [
-    "latest"
-  ],
   "plugins": [
-    "transform-object-rest-spread"
+    "transform-object-rest-spread",
+    "transform-es2015-modules-commonjs"
   ],
   "only": ["./+(test|src)/**.js", "./+(test|src)/**/*.js"]
 }

@@ -16,6 +16,7 @@ import {node, port, hasPort, hasNode, nodesDeep, parent, replaceNode} from './no
 import * as changeSet from '../changeSet'
 import {location, identifies as locIdentifies} from '../location'
 import {incidents} from './connections'
+import {access, store} from './internal'
 
 /**
  * Returns a list of edges in the graph. Each edge also has an extra field identifying the parent
@@ -26,11 +27,11 @@ import {incidents} from './connections'
  * @returns {Edges[]} A list of edges.
  */
 export function edgesDeep (graph) {
-  return compact(flatten(map((parent) => (parent.edges || []).map((e) => merge(e, {parent: Node.id(parent)})), nodesDeep(graph))))
+  return access('edgesDeep', graph) || store(compact(flatten(map((parent) => (parent.edges || []).map((e) => merge(e, {parent: Node.id(parent)})), nodesDeep(graph))))
     .map((edge) =>
       (edge.layer === 'dataflow' && hasPort(edge.from, graph))
         ? Edge.setType(Port.type(port(edge.from, graph)), edge)
-        : edge)
+        : edge), 'edgesDeep', graph)
 }
 
 /**

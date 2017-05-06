@@ -1,11 +1,13 @@
 
 import curry from 'lodash/fp/curry'
 import * as Graph from '../graph'
-import {intersection, difference} from 'set-ops'
+import setOps from 'set-ops'
 import * as Node from '../node'
 import {isPort} from '../port'
 import {isInnerEdge} from '../edge'
 import {predecessorsUntil} from './predecessors'
+
+const {intersection, difference} = setOps
 
 function ancestors (location, graph) {
   if (!Array.isArray(location)) {
