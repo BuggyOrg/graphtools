@@ -2,9 +2,7 @@
 import find from 'lodash/fp/find'
 import curry from 'lodash/fp/curry'
 import merge from 'lodash/fp/merge'
-import map from 'lodash/fp/map'
 import flatten from 'lodash/fp/flatten'
-import compact from 'lodash/fp/compact'
 import groupBy from 'lodash/fp/groupBy'
 import toPairs from 'lodash/fp/toPairs'
 import * as Port from '../port'
@@ -27,11 +25,9 @@ import {access, store} from './internal'
  * @returns {Edges[]} A list of edges.
  */
 export function edgesDeep (graph) {
-  return access('edgesDeep', graph) || store(compact(flatten(map((parent) => (parent.edges || []).map((e) => merge(e, {parent: Node.id(parent)})), nodesDeep(graph))))
-    .map((edge) =>
-      (edge.layer === 'dataflow' && hasPort(edge.from, graph))
-        ? Edge.setType(Port.type(port(edge.from, graph)), edge)
-        : edge), 'edgesDeep', graph)
+  return access('edgesDeep', graph) ||
+        store(flatten(nodesDeep(graph).map((parent) =>
+          edges(parent).map((e) => merge(e, {parent: Node.id(parent)})))), 'edgesDeep', graph)
 }
 
 /**
@@ -43,11 +39,11 @@ export function edgesDeep (graph) {
  * @returns {Edges[]} A list of edges.
  */
 export function edges (graph) {
-  return (graph.edges || [])
+  return access('edges', graph) || store((graph.edges || [])
     .map((edge) =>
       (edge.layer === 'dataflow' && hasPort(edge.from, graph))
         ? Edge.setType(Port.type(port(edge.from, graph)), edge)
-        : edge)
+        : edge), 'edges', graph)
 }
 
 export const checkEdge = curry((graph, edge) => {

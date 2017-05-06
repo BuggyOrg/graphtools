@@ -19,6 +19,14 @@ import { kind } from '../port'
  */
 export const pointsTo = curry((target, graph, edge) => {
   try {
+    if (edge.to.node) {
+      if (target.id) return target.id === edge.to.node
+      if (typeof (target) === 'string' && target[0] === '#') return edge.to.node === target
+    }
+    if (typeof (edge.to) === 'string') {
+      if (target.id) return target.id === edge.to
+      if (typeof (target) === 'string' && target[0] === '#') return edge.to === target
+    }
     var q = query(target, graph)
     if (typeof (edge.to) === 'string') {
       return q(node(edge.to, graph))
@@ -40,6 +48,14 @@ export const pointsTo = curry((target, graph, edge) => {
  */
 export const isFrom = curry((source, graph, edge) => {
   try {
+    if (edge.from.node) {
+      if (source.id) return source.id === edge.from.node
+      if (typeof (source) === 'string' && source[0] === '#') return edge.from.node === source
+    }
+    if (typeof (edge.from) === 'string') {
+      if (source.id) return source.id === edge.from
+      if (typeof (source) === 'string' && source[0] === '#') return edge.from === source
+    }
     var q = query(source, graph)
     if (typeof (edge.from) === 'string') {
       return q(node(edge.from, graph))
@@ -159,7 +175,8 @@ export function outIncidents (source, graph, { layers = ['dataflow'], goIntoComp
         return edges(n).filter(filterFn)
       }
     }
-    return edges(parent(n, graph) || graph).filter(filterFn)
+    const e = edges(parent(n, graph) || graph).filter(filterFn)
+    return e
   }
   return edgesDeep(graph).filter(filterFn)
 }
