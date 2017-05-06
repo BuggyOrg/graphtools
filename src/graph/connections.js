@@ -7,6 +7,19 @@ import { edgesDeep, edges } from './edge'
 import { query } from '../location'
 import { node, port, hasPort, parent } from '../graph/node'
 import { kind } from '../port'
+import { access, store } from './internal'
+
+const nameNode = (op, node) => {
+  if (typeof (node) === 'string') return op + node
+  else if (node.id) return op + node.id
+  else throw new Error('Cannot access cache for invalid node query: ' + node)
+}
+
+const namePort = (op, port) => {
+  if (typeof (port) === 'string') return op + port
+  else if (port.node && port.port) return op + port.port + '@' + port.node
+  else throw new Error('Cannot access cache for invalid port query:' + port)
+}
 
 /**
  * @function
@@ -110,6 +123,67 @@ export function predecessor (target, graph, config = { layers: ['dataflow'], goI
 }
 
 /**
+ * Get the dataflow predecessor of a node in the graph. This method works in O(1) when the cache is initialized.
+ * @param {Port|String} source The target port as an ID or a node object.
+ * @param {PortGraph} graph The graph
+ * @returns {Port[]} The ports that preceedes the node.
+ */
+export function predecessorPort (targetPort, graph) {
+  const name = namePort('predecessorPort', targetPort)
+  return access(name, graph) || store(predecessor(targetPort, graph), name, graph)
+}
+
+/**
+ * Get the dataflow predecessor of a node in the graph. This method works in O(1) when the cache is initialized.
+ * @param {Node|String} source The target node as an ID or a node object.
+ * @param {PortGraph} graph The graph
+ * @returns {Port[]} The ports that preceedes the node.
+ */
+export function predecessorNode (targetNode, graph) {
+  const name = nameNode('predecessorNode', targetNode)
+  return access(name, graph) || store(predecessor(targetNode, graph), name, graph)
+}
+
+/**
+ * Get the dataflow predecessors of a node in the graph. This method works in O(1) when the cache is initialized.
+ * @param {Port|String} source The target port as an ID or a node object.
+ * @param {PortGraph} graph The graph
+ * @returns {Port[]} A list of ports that preceedes the node.
+ */
+export function predecessorsPort (targetPort, graph) {
+  const name = namePort('predecessorsPort', targetPort)
+  return access(name, graph) || store(predecessors(targetPort, graph), name, graph)
+}
+
+/**
+ * Get the dataflow predecessors of a node in the graph. This method works in O(1) when the cache is initialized.
+ * @param {Port|String} source The target port as an ID or a node object.
+ * @param {PortGraph} graph The graph
+ * @returns {Port[]} A list of ports that preceedes the node.
+ */
+export function predecessorsNodePort (target, graph) {
+  if (target.id) return predecessorsNode(target, graph)
+  if (target.port && target.node) return predecessorsPort(target, graph)
+  if (typeof (target) === 'string') {
+    if (target[0] === '#') return predecessorsNode(target, graph)
+    else if (target.indexOf('@') !== -1) return predecessorsPort(target, graph)
+    else return predecessors(target, graph)
+  }
+  throw new Error('PredecessorNodePort only works for nodes or ports. Given input: ' + JSON.stringify(target))
+}
+
+/**
+ * Get the dataflow predecessors of a node in the graph. This method works in O(1) when the cache is initialized.
+ * @param {Node|String} source The target node as an ID or a node object.
+ * @param {PortGraph} graph The graph
+ * @returns {Port[]} A list of ports that preceedes the node.
+ */
+export function predecessorsNode (targetNode, graph) {
+  const name = nameNode('predecessorsNode', targetNode)
+  return access(name, graph) || store(predecessors(targetNode, graph), name, graph)
+}
+
+/**
  * Gets all ingoing incident edges to a port
  * @param {Location} target The port to which the edges are incident. This is the target node or port of each edge.
  * @param {PortGraph} graph The graph
@@ -121,8 +195,9 @@ export function predecessor (target, graph, config = { layers: ['dataflow'], goI
  * @returns {Edge[]} An array of all ingoing (i.e. pointsTo(port)) incident edges.
  */
 export function inIncidents (target, graph, { layers = ['dataflow'], goIntoCompounds = false } = {}) {
-  const filterFn = (e) => layers.some(l => l === e.layer) && (Edge.isBetweenPorts(e) || e.layer !== 'dataflow') &&
-    pointsTo(target, graph, e) && (e.layer !== 'dataflow' || goIntoCompounds || hasPort(target, graph) || kind(port(e.to, graph)) === 'input')
+  const filterFn = (e) => pointsTo(target, graph, e) && layers.some(l => l === e.layer) &&
+      (Edge.isBetweenPorts(e) || e.layer !== 'dataflow') &&
+      (e.layer !== 'dataflow' || goIntoCompounds || hasPort(target, graph) || kind(port(e.to, graph)) === 'input')
   if (layers.length === 1 && layers[0] === 'dataflow' && !goIntoCompounds) {
     const n = node(target, graph)
     if (hasPort(target, graph)) {
@@ -164,7 +239,7 @@ export function inIncident (target, graph, config = { layers: ['dataflow'], goIn
  */
 export function outIncidents (source, graph, { layers = ['dataflow'], goIntoCompounds = false } = {}) {
   const filterFn = (e) => {
-    return layers.some(l => l === e.layer) && (Edge.isBetweenPorts(e) || e.layer !== 'dataflow') && isFrom(source, graph, e) &&
+    return isFrom(source, graph, e) && layers.some(l => l === e.layer) && (Edge.isBetweenPorts(e) || e.layer !== 'dataflow') &&
       (e.layer !== 'dataflow' || goIntoCompounds || hasPort(source, graph) || kind(port(e.from, graph)) === 'output')
   }
   if (layers.length === 1 && layers[0] === 'dataflow' && !goIntoCompounds) {
@@ -190,10 +265,32 @@ export function outIncidents (source, graph, { layers = ['dataflow'], goIntoComp
  * @param {Boolean} [config.goIntoCompounds=false] Optional argument that activates looking for edges inside compounds.
  * If you specify a node as the location it will not go inside the node (if it is a compound) and look for
  * successors inside the compound.
- * @returns {Port[]} A list of ports that succeed the node with their corresponding nodes.
+ * @returns {Port[]} A list of ports that succeed the node.
  */
 export function successors (source, graph, config = { layers: ['dataflow'], goIntoCompounds: false }) {
   return map('to')(outIncidents(source, graph, config))
+}
+
+/**
+ * Get the dataflow successor of a node in the graph. This method works in O(1) when the cache is initialized.
+ * @param {Port|String} source The target port as an ID or a node object.
+ * @param {PortGraph} graph The graph
+ * @returns {Port[]} A list of ports that succeed the node.
+ */
+export function successorsPort (targetPort, graph) {
+  const name = namePort('successorsPort', targetPort)
+  return access(name, graph) || store(successors(targetPort, graph), name, graph)
+}
+
+/**
+ * Get the dataflow successor of a node in the graph. This method works in O(1) when the cache is initialized.
+ * @param {Node|String} source The source node as an ID or a node object.
+ * @param {PortGraph} graph The graph
+ * @returns {Port[]} A list of ports that succeed the node.
+ */
+export function successorsNode (sourceNode, graph) {
+  const name = nameNode('successorNode', sourceNode)
+  return access(name, graph) || store(successors(sourceNode, graph), name, graph)
 }
 
 function or (fn1, fn2) {

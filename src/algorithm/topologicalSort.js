@@ -21,11 +21,12 @@ export default function topologicalSort (compound, graph) {
   if (!graph) graph = compound
   // Calculate predecessor counts
   const predecessorCount = {}
-  for (const node of Graph.nodes(compound)) {
+  const nodes = Graph.nodes(compound)
+  for (const node of nodes) {
     predecessorCount[node.id] = 0
   }
-  for (const node of Graph.nodes(compound)) {
-    for (const successor of Graph.successors(node, graph)) {
+  for (const node of nodes) {
+    for (const successor of Graph.successorsNode(node, graph)) {
       if (successor.node !== compound.id) {
         predecessorCount[successor.node]++
       }
@@ -55,7 +56,7 @@ export default function topologicalSort (compound, graph) {
 
     // decrease the predecessor count of every successor of that node
     // this may produce new nodes with a predecessour count of 0
-    for (const successor of Graph.successors(nextElement, graph)) {
+    for (const successor of Graph.successorsNode(nextElement, graph)) {
       if (successor.node !== compound.id) {
         predecessorCount[successor.node]--
       }

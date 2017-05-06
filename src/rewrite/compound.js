@@ -13,7 +13,7 @@ import reverse from 'lodash/fp/reverse'
 import uniqBy from 'lodash/fp/uniqBy'
 import {flow} from '../graph/flow'
 import * as Compound from '../compound'
-import {predecessor, successors, inIncidents, inIncident, outIncidents} from '../graph/connections'
+import {predecessor, successors, successorsNode, inIncidents, inIncident, outIncidents} from '../graph/connections'
 import * as Graph from '../graph'
 import * as Node from '../node'
 import * as Path from '../compoundPath'
@@ -59,7 +59,7 @@ export const includePredecessor = curry((port, graph, ...cbs) => {
   var affectedPorts = uniqBy((pair) => pair.compoundPort,
     flatten(Node.outputPorts(predNode).map((p) => successors(p, graph).map((s) => ({predecessorPort: p, compoundPort: s})))))
   var postInPorts = affectedPorts.map((p) => Object.assign(p, {outEdges: outIncidents(p.compoundPort, graph)}))
-  var additionalPorts = successors(pred.node, graph).filter((n) => !Node.equal(n, portNode))
+  var additionalPorts = successorsNode(pred.node, graph).filter((n) => !Node.equal(n, portNode))
   var compound = portNode
 
   var newCompound = flow(
@@ -266,7 +266,7 @@ function inSubset (subset) {
 function moveEndsIntoCompound (subset, cmpdId) {
   return (graph) => {
     return Graph.flow(
-      subset.filter((n) => Graph.successors(n, graph).every(negate(inSubset(subset))))
+      subset.filter((n) => Graph.successorsNode(n, graph).every(negate(inSubset(subset))))
       .map((n) => moveIntoCompound(n, cmpdId))
     )(graph)
   }

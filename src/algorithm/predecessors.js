@@ -16,7 +16,7 @@ import * as Node from '../node'
 export function predecessorsUntil (locs, predicate, graph) {
   if (!Array.isArray(locs)) return predecessorsUntil([locs], predicate, graph)
   if (locs.length === 0) return []
-  const preds = flatten(locs.map((l) => Graph.predecessors(l, graph)))
+  const preds = flatten(locs.map((l) => Graph.predecessorsNodePort(l, graph)))
     .map((n) => Graph.node(n, graph))
     .filter(predicate)
   return uniq(preds.concat(predecessorsUntil(preds, predicate, graph)))
