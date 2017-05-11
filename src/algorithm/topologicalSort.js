@@ -55,7 +55,7 @@ export default function topologicalSort (compound, graph) {
     delete predecessorCount[nextElement]
 
     // decrease the predecessor count of every successor of that node
-    // this may produce new nodes with a predecessour count of 0
+    // this may produce new nodes with a predecessor count of 0
     for (const successor of Graph.successorsNode(nextElement, graph)) {
       if (successor.node !== compound.id) {
         predecessorCount[successor.node]--

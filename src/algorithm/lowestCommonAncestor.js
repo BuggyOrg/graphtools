@@ -4,10 +4,9 @@ import * as Graph from '../graph'
 import setOps from 'set-ops'
 import * as Node from '../node'
 import {isPort} from '../port'
-import {isInnerEdge} from '../edge'
 import {predecessorsUntil} from './predecessors'
 
-const {intersection, difference} = setOps
+const {intersection} = setOps
 
 function ancestors (location, graph) {
   if (!Array.isArray(location)) {
@@ -16,7 +15,7 @@ function ancestors (location, graph) {
         .map((n) => Node.id(Graph.node(n, graph))))
     } else {
       return new Set(predecessorsUntil([location], (node) => Graph.sameParents([node, location], graph), graph)
-          .map((n) => Node.id(Graph.node(n, graph))))
+        .map((n) => Node.id(Graph.node(n, graph))))
         .add(Node.id(Graph.node(location, graph)))
     }
   }
@@ -24,10 +23,6 @@ function ancestors (location, graph) {
     .concat(location
       .filter((l) => !isPort(l)))
       .map((n) => Node.id(Graph.node(n, graph))))
-}
-
-function hasOnlyOutEdgesToParent (graph) {
-  return (node) => Graph.outIncidents(node, graph).filter(isInnerEdge).length === 0
 }
 
 /**
@@ -55,11 +50,14 @@ export const lowestCommonAncestors = curry((locations, graph) => {
   const locationAncestors = locations.map((l) => ancestors(l, graph))
   const allNodes = new Set(Graph.nodes(Graph.parent(locations[0], graph)).map(Node.id))
   const commonAncestors = locationAncestors.reduce(intersection, allNodes)
-  const nonCommon = difference(allNodes, commonAncestors)
-  const commonGraph = Graph.flow([...nonCommon].map((n) => Graph.removeNode(n)))(graph)
-  const lcas = Graph.nodes(commonGraph)
-    .filter((n) => Graph.sameParents([n.id, locations[0]], graph))
-    .filter(hasOnlyOutEdgesToParent(commonGraph))
-  if (lcas.length === 0) return [Graph.parent(locations[0], graph)]
-  return lcas
+  for (const node of commonAncestors) {
+    for (const successor of Graph.successors(node, graph)) {
+      if (commonAncestors.has(successor.node) && commonAncestors.delete(node)) {
+        break
+      }
+    }
+  }
+
+  if (commonAncestors.size === 0) return [Graph.parent(locations[0], graph)]
+  return Array.from(commonAncestors).map((id) => Graph.node(id, graph))
 })
