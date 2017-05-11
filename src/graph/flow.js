@@ -74,7 +74,8 @@ export const flow = function () {
  *      Graph.addEdge({from: Node.port('x', newNode), to: '@out'})(newGraph))
  * )(graph)
  */
-export const Let = (fn, cb) => {
+export const Let = (fn, cb, ...rest) => {
+  if (rest.length > 0) throw new Error('Let takes exactly two arguments. If you want to perform multiple actions put them into an array (Graph.Let([...], callback).')
   return (graph) => {
     if (Array.isArray(fn)) {
       var res = []
