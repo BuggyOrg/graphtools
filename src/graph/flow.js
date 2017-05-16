@@ -41,6 +41,7 @@ export const flow = function () {
     if (!graph) {
       graph = empty()
     }
+    if (options && options.inplace) graph.inplace = true
     return [].reduce.call(args, (obj, fn, idx) => {
       try {
         var newGraph = fn(obj.graph, (data, graph) => graph)

@@ -8,7 +8,7 @@ import * as Node from '../node'
 import * as changeSet from '../changeSet'
 import {assertGraph} from '../assert'
 import {flow, flowCallback, Let, sequential} from './flow'
-import {nodeBy, mergeNodes, rePath, addNodeInternal, unID, nodesDeep} from './internal'
+import {nodeBy, mergeNodes, rePath, addNodeInternal, unID, nodesDeep, access, store} from './internal'
 import {query, toString} from '../location'
 import {incidents} from './connections'
 import {createNode} from '../component'
@@ -90,7 +90,13 @@ export function nodeNames (graph) {
  */
 export const node = (loc, graph) => {
   try {
-    var node = nodeBy(query(loc, graph), graph)
+    if (Array.isArray(loc) && loc.length === 0) return graph
+    if (loc.id || loc.node || (Array.isArray(loc) && loc[loc.length - 1][0] === '#') || typeof (loc) === 'string' && loc[0] === '#') {
+      const id = loc.id || loc.node || (Array.isArray(loc) ? loc[loc.length - 1] : loc)
+      node = (access(id, graph)) || store(nodeBy(query(loc, graph), graph), id, graph)
+    } else {
+      var node = nodeBy(query(loc, graph), graph)
+    }
   } catch (err) {
     throw new Error(`Node: '${Node.id(loc) || JSON.stringify(loc)}' does not exist in the graph.`)
   }
@@ -160,11 +166,11 @@ const addNodeByPath = curry((parentPath, nodeData, graph, ...cbs) => {
   const cb = flowCallback(cbs)
   var newNode
   var newGraph
-  if (isRoot(parentPath)) {
-    newGraph = addNodeInternal(nodeData, graph, checkNode, (n, g) => { newNode = n; return g })
+  if (isRoot(parentPath) || graph.inplace) {
+    newGraph = addNodeInternal(nodeData, graph, graph.path, checkNode, (n, g) => { newNode = n; return g })
   } else {
     let parentGraph = node(parentPath, graph)
-    newGraph = replaceNode(parentPath, addNodeInternal(nodeData, parentGraph, checkNode, (n, g) => { newNode = n; return g }), graph)
+    newGraph = replaceNode(parentPath, addNodeInternal(nodeData, parentGraph, parentGraph.path, checkNode, (n, g) => { newNode = n; return g }), graph)
   }
   return cb(newNode, newGraph)
 })
@@ -224,7 +230,7 @@ export const addNode = curry((node, graph, ...cbs) => {
   if (Node.isAtomic(graph)) {
     throw new Error('Cannot add Node to atomic node at: ' + graph.path)
   }
-  return addNodeInternal(createNode({}, node), graph, checkNode, ...cbs)
+  return addNodeInternal(createNode({}, node), graph, graph.path, checkNode, ...cbs)
 })
 
 export const addNodeWithID = curry((node, graph, ...cbs) => {
@@ -347,7 +353,15 @@ export const replaceNode = curry((loc, newNode, graph) => {
   assertGraph(graph, 3, 'replaceNode')
   var preNode = node(loc, graph)
   if (equal(preNode.path, graph.path)) return newNode
-  return flow(
+  if (!newNode.id && graph.inplace) {
+    const g = flow(
+      mergeNodes(preNode, Object.assign({id: preNode.id}, newNode)),
+      (Node.isReference(preNode) && !Node.isReference(newNode)) ? realizeEdgesForNode(loc) : (graph) => graph,
+      {name: '[replaceNode] For location ' + toString(loc)}
+    )(graph)
+    return g
+  }
+  const newGraph = flow(
     Let(
         [removeNodeInternal(loc, false), addNodeByPath(nodeParentPath(loc, graph), newNode)],
         ([removedNode, insertedNode], graph) => mergeNodes(removedNode, insertedNode, graph)),
@@ -355,6 +369,7 @@ export const replaceNode = curry((loc, newNode, graph) => {
     (Node.isReference(preNode) && !Node.isReference(newNode)) ? realizeEdgesForNode(loc) : (graph) => graph,
     {name: '[replaceNode] For location ' + toString(loc)}
   )(graph)
+  return newGraph
 })
 
 /**

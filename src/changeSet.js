@@ -14,7 +14,8 @@ import _f from 'lodash/fp'
 import * as Node from './node'
 import * as Edge from './edge'
 import * as Component from './component'
-import {resetStore} from './graph/internal'
+import {relativeTo} from './compoundPath'
+import {store} from './graph/internal'
 
 const hasChildren = Node.hasChildren
 
@@ -30,12 +31,23 @@ export function updateNode (nodePath, mergeValue) {
 }
 
 /**
+ * Creates a change set to replace a node with a given value
+ * @param {string} node The identifier of the node.
+ * @param {Object} mergeValue An object that contains a whole node that should be set.
+ * E.g. `{recursive: true}` will update the field `recursive` in the node and sets it to `true`.
+ * @returns {ChangeSet} A change set containing the operation.
+ */
+export function setNode (nodePath, setValue) {
+  return {type: 'changeSet', operation: 'setPath', query: nodePath, value: setValue}
+}
+
+/**
  * Creates a change set that creates a new node.
  * @param {Object} value The new node.
  * @returns {ChangeSet} A change set containing the new node.
  */
-export function insertNode (value) {
-  return {type: 'changeSet', operation: 'insert', query: 'nodes', value}
+export function insertNode (value, path = []) {
+  return {type: 'changeSet', operation: 'insert', query: 'nodes', value, path}
 }
 
 export function removeNode (id) {
@@ -152,6 +164,56 @@ const applyMergeByPath = (graph, path, value) => {
   }
 }
 
+const setNodeByPath = (graph, path, value) => {
+  var cur = graph
+  for (var i = 0; i < path.length - 1; i++) {
+    let idx = _.findIndex(cur.nodes, Node.equal(path[i]))
+    cur = cur.nodes[idx]
+  }
+  let idx = _.findIndex(cur.nodes, Node.equal(path[path.length - 1]))
+  cur.nodes[idx] = value
+}
+
+const getPath = (graph, path) => {
+  if (path.length === 0) return graph
+  var cur = graph
+  for (var i = 0; i < path.length - 1; i++) {
+    let idx = _.findIndex(cur.nodes, Node.equal(path[i]))
+    cur = cur.nodes[idx]
+  }
+  let idx = _.findIndex(cur.nodes, Node.equal(path[path.length - 1]))
+  return cur.nodes[idx]
+}
+
+const applySetByPath = (graph, path, value) => {
+  if (graph.inplace) {
+    setNodeByPath(graph, path, value)
+    return graph
+  }
+  var idx = _.findIndex(graph.nodes, Node.equal(path[0]))
+  if (path.length === 1) {
+    if (idx > -1) {
+      return {
+        ...graph,
+        nodes: graph.nodes.map((i, itemIdx) => {
+          if (idx === itemIdx) return value
+          return i
+        })
+      }
+    }
+  } else {
+    if (idx > -1 && (hasChildren(graph.nodes[idx]))) {
+      return {
+        ...graph,
+        nodes: graph.nodes.map((i, itemIdx) => {
+          if (idx === itemIdx) return applySetByPath(i, path.slice(1), value)
+          return i
+        })
+      }
+    }
+  }
+}
+
 const applyMergeByComponent = (graph, cId, value) => {
   var idx = _.findIndex(graph.components, (c) => Component.id(c) === cId)
   return {
@@ -171,6 +233,21 @@ const applyMergeByEdge = (graph, edge, value) => {
       if (idx === eIdx) return _f.merge(e, value)
       return e
     })
+  }
+}
+
+const insertInGraph = (what, where, value, graph) => {
+  if (graph.inplace && what === 'nodes') {
+    var node = getPath(graph, where)
+    node[what].push(value)
+    store(graph[what], 'nodesDeep', graph)
+    store(value, value.id, graph)
+    return graph
+  }
+  if (Array.isArray(where) && relativeTo(where, graph.path).length !== 0) throw new Error('Cannot insert deep without modifications. Path = ' + where)
+  return {
+    ...graph,
+    [what]: [ ...graph[what], value ]
   }
 }
 
@@ -210,15 +287,14 @@ export function applyChangeSetInplace (graph, changeSet) {
     throw new Error('Cannot apply non-ChangeSet ' + JSON.stringify(changeSet))
   } else if (changeSet.operation === 'mergePath') {
     return applyMergeByPath(graph, changeSet.query, changeSet.value)
+  } else if (changeSet.operation === 'setPath') {
+    return applySetByPath(graph, changeSet.query, changeSet.value)
   } else if (changeSet.operation === 'mergeComponent') {
     return applyMergeByComponent(graph, changeSet.query, changeSet.value)
   } else if (changeSet.operation === 'mergeEdge') {
     return applyMergeByEdge(graph, changeSet.query, changeSet.value)
   } else if (changeSet.operation === 'insert') {
-    return {
-      ...graph,
-      [changeSet.query]: [ ...graph[changeSet.query], changeSet.value ]
-    }
+    return insertInGraph(changeSet.query, changeSet.path, changeSet.value, graph)
   } else if (changeSet.operation === 'remove') {
     return {
       ...graph,

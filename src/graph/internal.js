@@ -16,6 +16,7 @@ import {equal as pathEqual, isRoot, relativeTo, join} from '../compoundPath'
 import {setPath as compoundSetPath, isCompound} from '../compound'
 import * as changeSet from '../changeSet'
 import {flowCallback} from './flow'
+import {parent} from './node'
 
 /**
  * @function
@@ -100,8 +101,8 @@ export function nodeBy (fn, graph) {
  * @returns {CompoundPath|null} The path to the node with the given ID.
  */
 export const idToPath = curry((id, graph) => {
-  // return graph.__internals.idMap[id] // speed up search by creating a idMap cache
-  return nodesDeep(graph).find((n) => n.id === id).path
+  return access('path-' + id, graph) || store(nodesDeep(graph).find((n) => n.id === id).path, 'path-' + id, graph)
+  // return nodesDeep(graph).find((n) => n.id === id).path
 })
 
 function replacePortIDs (port, id, replaceId) {
@@ -135,14 +136,41 @@ export function replaceEdgeIDs (edges, id, replaceId) {
 export const mergeNodes = curry((oldNode, newNode, graph, ...cbs) => {
   const cb = flowCallback(cbs)
   var path = idToPath(newNode.id, graph)
-  var mergeGraph = changeSet.applyChangeSet(graph,
-    changeSet.updateNode(relativeTo(path, graph.path), merge(
-      pick(['id', 'name', 'path'], oldNode), {edges: replaceEdgeIDs(newNode.edges || [], oldNode.id, newNode.id)})))
-  return cb(nodeByPath(path, graph), mergeGraph)
+  if (!graph.inplace) {
+    const mergeGraph = changeSet.applyChangeSet(graph,
+      changeSet.updateNode(relativeTo(path, graph.path), merge(
+        pick(['id', 'name', 'path'], oldNode), {edges: replaceEdgeIDs(newNode.edges || [], oldNode.id, newNode.id)})))
+    return cb(nodeByPath(path, graph), mergeGraph)
+  }
+  console.time('merging')
+  console.time('rel')
+  const p = relativeTo(path, graph.path)
+  console.timeEnd('rel')
+  console.time('n')
+  const n = Object.assign({},
+    newNode,
+    pick(['id', 'name', 'path'], oldNode),
+    {edges: (oldNode.id === newNode.id) ? newNode.edges : replaceEdgeIDs(newNode.edges || [], oldNode.id, newNode.id)})
+  console.timeEnd('n')
+  const m = cb(nodeByPath(path, graph), changeSet.applyChangeSet(graph, // parent(oldNode, graph),
+    changeSet.setNode(
+      p,
+      n
+      )))
+  /*const m = cb(nodeByPath(path, graph), changeSet.applyChangeSet(graph, // parent(oldNode, graph),
+    changeSet.setNode(
+      relativeTo(path, graph.path),
+      Object.assign({},
+        newNode,
+        pick(['id', 'name', 'path'], oldNode),
+        {edges: (oldNode.id === newNode.id) ? newNode.edges : replaceEdgeIDs(newNode.edges || [], oldNode.id, newNode.id)})
+      )))*/
+  console.timeEnd('merging')
+  return m
 })
 
 /**
- * Updates all pathes in the graph.
+ * Updates all paths in the graph.
  * @param {PortGraph} graph The graph to update
  * @returns {PortGraph} The port graph with all valid paths.
  */
@@ -174,17 +202,17 @@ export const unID = (node) => {
   return omit(['id', 'path'], node)
 }
 
-export function addNodeInternal (node, graph, checkNode, ...cbs) {
+export function addNodeInternal (node, graph, path, checkNode, ...cbs) {
   const cb = flowCallback(cbs)
   var newNode
   if (isCompound(node)) {
-    newNode = setPath(Node.create(unID(node)), Node.path(graph))
+    newNode = setPath(Node.create(unID(node)), path)
   } else {
-    newNode = setPath(Node.create(unID(node)), Node.path(graph))
+    newNode = setPath(Node.create(unID(node)), path)
   }
   checkNode(graph, newNode)
   if (Node.hasChildren(newNode)) {
     newNode = set('edges', replaceEdgeIDs(newNode.edges, newNode.id, node.id), newNode)
   }
-  return cb(newNode, changeSet.applyChangeSet(graph, changeSet.insertNode(newNode)))
+  return cb(newNode, changeSet.applyChangeSet(graph, changeSet.insertNode(newNode, path)))
 }
