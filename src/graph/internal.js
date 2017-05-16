@@ -16,7 +16,6 @@ import {equal as pathEqual, isRoot, relativeTo, join} from '../compoundPath'
 import {setPath as compoundSetPath, isCompound} from '../compound'
 import * as changeSet from '../changeSet'
 import {flowCallback} from './flow'
-import {parent} from './node'
 
 /**
  * @function
@@ -142,31 +141,14 @@ export const mergeNodes = curry((oldNode, newNode, graph, ...cbs) => {
         pick(['id', 'name', 'path'], oldNode), {edges: replaceEdgeIDs(newNode.edges || [], oldNode.id, newNode.id)})))
     return cb(nodeByPath(path, graph), mergeGraph)
   }
-  console.time('merging')
-  console.time('rel')
-  const p = relativeTo(path, graph.path)
-  console.timeEnd('rel')
-  console.time('n')
-  const n = Object.assign({},
-    newNode,
-    pick(['id', 'name', 'path'], oldNode),
-    {edges: (oldNode.id === newNode.id) ? newNode.edges : replaceEdgeIDs(newNode.edges || [], oldNode.id, newNode.id)})
-  console.timeEnd('n')
-  const m = cb(nodeByPath(path, graph), changeSet.applyChangeSet(graph, // parent(oldNode, graph),
-    changeSet.setNode(
-      p,
-      n
-      )))
-  /*const m = cb(nodeByPath(path, graph), changeSet.applyChangeSet(graph, // parent(oldNode, graph),
+  return cb(nodeByPath(path, graph), changeSet.applyChangeSet(graph, // parent(oldNode, graph),
     changeSet.setNode(
       relativeTo(path, graph.path),
       Object.assign({},
         newNode,
         pick(['id', 'name', 'path'], oldNode),
         {edges: (oldNode.id === newNode.id) ? newNode.edges : replaceEdgeIDs(newNode.edges || [], oldNode.id, newNode.id)})
-      )))*/
-  console.timeEnd('merging')
-  return m
+      )))
 })
 
 /**

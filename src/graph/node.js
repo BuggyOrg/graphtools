@@ -90,12 +90,13 @@ export function nodeNames (graph) {
  */
 export const node = (loc, graph) => {
   try {
+    var node
     if (Array.isArray(loc) && loc.length === 0) return graph
-    if (loc.id || loc.node || (Array.isArray(loc) && loc[loc.length - 1][0] === '#') || typeof (loc) === 'string' && loc[0] === '#') {
+    if (loc.id || loc.node || (Array.isArray(loc) && loc[loc.length - 1][0] === '#') || (typeof (loc) === 'string' && loc[0] === '#')) {
       const id = loc.id || loc.node || (Array.isArray(loc) ? loc[loc.length - 1] : loc)
       node = (access(id, graph)) || store(nodeBy(query(loc, graph), graph), id, graph)
     } else {
-      var node = nodeBy(query(loc, graph), graph)
+      node = nodeBy(query(loc, graph), graph)
     }
   } catch (err) {
     throw new Error(`Node: '${Node.id(loc) || JSON.stringify(loc)}' does not exist in the graph.`)
