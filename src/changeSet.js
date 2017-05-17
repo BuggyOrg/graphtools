@@ -237,7 +237,7 @@ const applyMergeByEdge = (graph, edge, value) => {
 }
 
 const insertInGraph = (what, where, value, graph) => {
-  if (graph.inplace && what === 'nodes') {
+  if (graph.inplace && what === 'nodes' && (!value.nodes || value.nodes.length === 0)) {
     var node = getPath(graph, where)
     node[what].push(value)
     store(graph[what], 'nodesDeep', graph)

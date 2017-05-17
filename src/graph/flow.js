@@ -41,8 +41,8 @@ export const flow = function () {
     if (!graph) {
       graph = empty()
     }
-    if (options && options.inplace) graph.inplace = true
-    return [].reduce.call(args, (obj, fn, idx) => {
+    if (options && options.inPlace) graph.inplace = true
+    var resGraph = [].reduce.call(args, (obj, fn, idx) => {
       try {
         var newGraph = fn(obj.graph, (data, graph) => graph)
         if (options && options.debug) debug(newGraph)
@@ -56,6 +56,8 @@ export const flow = function () {
         throw err
       }
     }, {graph, store: {}}).graph
+    delete resGraph.inplace
+    return resGraph
   }
 }
 
