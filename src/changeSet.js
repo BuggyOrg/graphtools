@@ -15,7 +15,7 @@ import * as Node from './node'
 import * as Edge from './edge'
 import * as Component from './component'
 import {relativeTo} from './compoundPath'
-import {store} from './graph/internal'
+import {access, store} from './graph/internal'
 
 const hasChildren = Node.hasChildren
 
@@ -237,10 +237,15 @@ const applyMergeByEdge = (graph, edge, value) => {
 }
 
 const insertInGraph = (what, where, value, graph) => {
-  if (graph.inplace && what === 'nodes' && (!value.nodes || value.nodes.length === 0)) {
+  if (graph.inplace && what === 'nodes') {
     var node = getPath(graph, where)
+    if (value.___store) delete value.___store
     node[what].push(value)
-    store(graph[what], 'nodesDeep', graph)
+    var nDeep = access('nodesDeep', graph)
+    if (nDeep) {
+      nDeep.push(value)
+      store(nDeep, 'nodesDeep', graph)
+    }
     store(value, value.id, graph)
     return graph
   }

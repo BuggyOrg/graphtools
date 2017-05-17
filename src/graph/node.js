@@ -357,6 +357,7 @@ export const replaceNode = curry((loc, newNode, graph) => {
   if (!newNode.id && graph.inplace) {
     const g = flow(
       mergeNodes(preNode, Object.assign({id: preNode.id}, newNode)),
+      rePath,
       (Node.isReference(preNode) && !Node.isReference(newNode)) ? realizeEdgesForNode(loc) : (graph) => graph,
       {name: '[replaceNode] For location ' + toString(loc)}
     )(graph)

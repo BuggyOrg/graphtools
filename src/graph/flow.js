@@ -56,7 +56,7 @@ export const flow = function () {
         throw err
       }
     }, {graph, store: {}}).graph
-    delete resGraph.inplace
+    if (options && options.inPlace) delete resGraph.inplace
     return resGraph
   }
 }
