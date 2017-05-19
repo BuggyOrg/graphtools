@@ -241,7 +241,8 @@ function moveIntoCompound (node, cmpdId) {
       Node.inputPorts(node).map((p) => Compound.addInputPort(uniqify(p))),
       Graph.flow(Node.inputPorts(node).map((p) => Graph.addEdge({from: '@' + uniquePortName(p), to: node.id + '@' + p.port}))),
       Node.outputPorts(node).map((p) => Compound.addOutputPort(uniqify(p))),
-      Graph.flow(Node.outputPorts(node).map((p) => Graph.addEdge({from: node.id + '@' + p.port, to: '@' + uniquePortName(p)})))
+      Graph.flow(Node.outputPorts(node).map((p) => Graph.addEdge({from: node.id + '@' + p.port, to: '@' + uniquePortName(p)}))),
+      {debug: true}
     )(Graph.node(cmpdId, graph))
     const newInputs = Node.inputPorts(node).map((p) =>
         Graph.flow(Graph.inIncidents(p, graph)
@@ -254,7 +255,8 @@ function moveIntoCompound (node, cmpdId) {
       Graph.removeNode(node),
       Graph.replaceNode(cmpdId, newComp),
       newInputs,
-      newOutputs
+      newOutputs,
+      {debug: true}
     )(graph)
   }
 }

@@ -15,7 +15,7 @@ import * as Node from './node'
 import * as Edge from './edge'
 import * as Component from './component'
 import {relativeTo} from './compoundPath'
-import {access, store} from './graph/internal'
+import {access, store, forget, nodesDeep} from './graph/internal'
 
 const hasChildren = Node.hasChildren
 
@@ -164,6 +164,19 @@ const applyMergeByPath = (graph, path, value) => {
   }
 }
 
+const updateValue = (what, value, graph) => {
+  var val = access(what, graph)
+  if (val) {
+    for (var idx in val) {
+      if (val[idx].id === value.id) {
+        val[idx] = value
+        break
+      }
+    }
+    store(val, what, graph)
+  }
+}
+
 const setNodeByPath = (graph, path, value) => {
   var cur = graph
   for (var i = 0; i < path.length - 1; i++) {
@@ -172,6 +185,11 @@ const setNodeByPath = (graph, path, value) => {
   }
   let idx = _.findIndex(cur.nodes, Node.equal(path[path.length - 1]))
   cur.nodes[idx] = value
+  updateValue('nodesDeep', value, graph)
+  forget('edgesDeep', graph)
+  updateValue('nodes', value, cur)
+  forget('edges', cur)
+  store(value, value.id, graph)
 }
 
 const getPath = (graph, path) => {
@@ -236,17 +254,24 @@ const applyMergeByEdge = (graph, edge, value) => {
   }
 }
 
+const updatePush = (what, value, graph) => {
+  var val = access(what, graph)
+  if (val) {
+    val.push(value)
+    store(val, what, graph)
+  }
+}
+
 const insertInGraph = (what, where, value, graph) => {
   if (graph.inplace && what === 'nodes') {
     var node = getPath(graph, where)
-    if (value.___store) delete value.___store
     node[what].push(value)
-    var nDeep = access('nodesDeep', graph)
-    if (nDeep) {
-      nDeep.push(value)
-      store(nDeep, 'nodesDeep', graph)
+    const newNodes = nodesDeep(value)
+    for (node of newNodes) {
+      updatePush('nodesDeep', node, graph)
+      updatePush('nodes', node, node)
+      store(node, node.id, graph)
     }
-    store(value, value.id, graph)
     return graph
   }
   if (Array.isArray(where) && relativeTo(where, graph.path).length !== 0) throw new Error('Cannot insert deep without modifications. Path = ' + where)

@@ -354,7 +354,7 @@ export const replaceNode = curry((loc, newNode, graph) => {
   assertGraph(graph, 3, 'replaceNode')
   var preNode = node(loc, graph)
   if (equal(preNode.path, graph.path)) return newNode
-  if (!newNode.id && graph.inplace) {
+  if ((!newNode.id || newNode.id === preNode.id) && graph.inplace) {
     const g = flow(
       mergeNodes(preNode, Object.assign({id: preNode.id}, newNode)),
       rePath,
@@ -363,6 +363,7 @@ export const replaceNode = curry((loc, newNode, graph) => {
     )(graph)
     return g
   }
+  delete graph.inplace
   const newGraph = flow(
     Let(
         [removeNodeInternal(loc, false), addNodeByPath(nodeParentPath(loc, graph), newNode)],

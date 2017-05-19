@@ -48,6 +48,13 @@ export function access (key, graph) {
   return (graph.___store) ? graph.___store[key] : undefined
 }
 
+export function forget (key, graph) {
+  if (graph.___store) {
+    delete graph.___store[key]
+  }
+  return graph
+}
+
 function initStore (graph) {
   Object.defineProperty(graph, '___store', {configurable: true, enumerable: false, value: {}})
 }
