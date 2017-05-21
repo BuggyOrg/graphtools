@@ -2,7 +2,7 @@
 import curry from 'lodash/fp/curry'
 import merge from 'lodash/fp/merge'
 import omit from 'lodash/fp/omit'
-import {isRoot, rest as pathRest, base as pathBase, parent as pathParent, relativeTo, equal} from '../compoundPath'
+import {isRoot, rest as pathRest, base as pathBase, parent as pathParent, relativeTo, equal, join} from '../compoundPath'
 import {normalize as normalizePort, portName} from '../port'
 import * as Node from '../node'
 import * as changeSet from '../changeSet'
@@ -140,7 +140,8 @@ export const hasNode = (loc, graph) => {
 }
 
 export function checkNode (graph, nodeToCheck) {
-  if (hasNode(unID(nodeToCheck), graph) && !equal(node(unID(nodeToCheck), graph).path, graph.path) && !Node.equal(nodeToCheck, graph)) {
+  const parent = node(pathParent(nodeToCheck.path), graph)
+  if (hasNode(unID(nodeToCheck), graph) && !equal(node(unID(nodeToCheck), graph).path, graph.path) && !Node.equal(nodeToCheck, graph) && (equal(pathParent(node(unID(nodeToCheck), graph).path), parent.path))) {
     throw new Error('Cannot add already existing node: ' + Node.name(nodeToCheck))
   }
   if (!nodeToCheck) {
@@ -148,7 +149,7 @@ export function checkNode (graph, nodeToCheck) {
   } else if (!Node.isValid(nodeToCheck)) {
     throw new Error('Cannot add invalid node to graph. Are you missing the id or a port?\nNode: ' + JSON.stringify(nodeToCheck))
   } else {
-    if (Node.hasName(nodeToCheck) && hasNode(Node.name(nodeToCheck), graph) && !Node.equal(unID(nodeToCheck), graph)) {
+    if (Node.hasName(nodeToCheck) && hasNode(Node.name(nodeToCheck), parent) && !Node.equal(unID(nodeToCheck), parent)) {
       throw new Error('Cannot add a node if the name is already used. Names must be unique in every compound. Tried to add node: ' + JSON.stringify(nodeToCheck))
     }
   }
@@ -168,7 +169,7 @@ const addNodeByPath = curry((parentPath, nodeData, graph, ...cbs) => {
   var newNode
   var newGraph
   if (isRoot(parentPath) || graph.inplace) {
-    newGraph = addNodeInternal(nodeData, graph, graph.path, checkNode, (n, g) => { newNode = n; return g })
+    newGraph = addNodeInternal(nodeData, graph, join(graph.path, parentPath), checkNode, (n, g) => { newNode = n; return g })
   } else {
     let parentGraph = node(parentPath, graph)
     newGraph = replaceNode(parentPath, addNodeInternal(nodeData, parentGraph, parentGraph.path, checkNode, (n, g) => { newNode = n; return g }), graph)

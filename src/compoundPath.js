@@ -159,7 +159,7 @@ export const relativeTo = curry((path1, path2) => {
   if (path2.length === 0) {
     return path1
   } else if (path1[0] !== path2[0]) {
-    throw new Error('Pathes are not subsets and thus the relative path cannot be calculated.')
+    throw new Error('Pathes are not subsets and thus the relative path cannot be calculated.' + JSON.stringify(path1) + ' and ' + JSON.stringify(path2))
   } else {
     return relativeTo(rest(path1), rest(path2))
   }

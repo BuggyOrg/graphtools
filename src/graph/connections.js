@@ -10,14 +10,14 @@ import { kind } from '../port'
 import { access, store } from './internal'
 
 const nameNode = (op, node) => {
-  if (typeof (node) === 'string') return op + node
-  else if (node.id) return op + node.id
+  if (typeof (node) === 'string') return op + '.' + node
+  else if (node.id) return op + '.' + node.id
   else throw new Error('Cannot access cache for invalid node query: ' + node)
 }
 
 const namePort = (op, port) => {
-  if (typeof (port) === 'string') return op + port
-  else if (port.node && port.port) return op + port.port + '@' + port.node
+  if (typeof (port) === 'string') return op + '.' + port
+  else if (port.node && port.port) return op + '.' + port.port + '@' + port.node
   else throw new Error('Cannot access cache for invalid port query:' + port)
 }
 

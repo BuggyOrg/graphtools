@@ -40,7 +40,7 @@ function nodesDeepInternal (graph) {
 
 export function store (what, key, graph) {
   if (!graph.___store) initStore(graph)
-  graph.___store[key] = what
+  set(key, what, graph)
   return what
 }
 

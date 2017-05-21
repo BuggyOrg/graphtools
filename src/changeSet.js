@@ -14,7 +14,7 @@ import _f from 'lodash/fp'
 import * as Node from './node'
 import * as Edge from './edge'
 import * as Component from './component'
-import {relativeTo} from './compoundPath'
+import {relativeTo, isRoot} from './compoundPath'
 import {access, store, forget, nodesDeep} from './graph/internal'
 
 const hasChildren = Node.hasChildren
@@ -187,6 +187,10 @@ const setNodeByPath = (graph, path, value) => {
   cur.nodes[idx] = value
   updateValue('nodesDeep', value, graph)
   forget('edgesDeep', graph)
+  forget('successorNode', graph)
+  forget('successorPort', graph)
+  forget('predecessorNode', graph)
+  forget('predecessorPort', graph)
   updateValue('nodes', value, cur)
   forget('edges', cur)
   store(value, value.id, graph)
@@ -274,7 +278,9 @@ const insertInGraph = (what, where, value, graph) => {
     }
     return graph
   }
-  if (Array.isArray(where) && relativeTo(where, graph.path).length !== 0) throw new Error('Cannot insert deep without modifications. Path = ' + where)
+  if (Array.isArray(where) && !isRoot(where) && relativeTo(where, graph.path).length !== 0) {
+    throw new Error('Cannot insert deep without modifications. Path = ' + where)
+  }
   return {
     ...graph,
     [what]: [ ...graph[what], value ]

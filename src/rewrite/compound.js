@@ -241,8 +241,7 @@ function moveIntoCompound (node, cmpdId) {
       Node.inputPorts(node).map((p) => Compound.addInputPort(uniqify(p))),
       Graph.flow(Node.inputPorts(node).map((p) => Graph.addEdge({from: '@' + uniquePortName(p), to: node.id + '@' + p.port}))),
       Node.outputPorts(node).map((p) => Compound.addOutputPort(uniqify(p))),
-      Graph.flow(Node.outputPorts(node).map((p) => Graph.addEdge({from: node.id + '@' + p.port, to: '@' + uniquePortName(p)}))),
-      {debug: true}
+      Graph.flow(Node.outputPorts(node).map((p) => Graph.addEdge({from: node.id + '@' + p.port, to: '@' + uniquePortName(p)})))
     )(Graph.node(cmpdId, graph))
     const newInputs = Node.inputPorts(node).map((p) =>
         Graph.flow(Graph.inIncidents(p, graph)
@@ -255,8 +254,7 @@ function moveIntoCompound (node, cmpdId) {
       Graph.removeNode(node),
       Graph.replaceNode(cmpdId, newComp),
       newInputs,
-      newOutputs,
-      {debug: true}
+      newOutputs
     )(graph)
   }
 }
@@ -316,7 +314,7 @@ export const compoundify = curry((parent, nodes, graph, ...cbs) => {
     throw new Error('Cannot compoundify nodes, the are not children of ' + JSON.stringify(parent) + '\nNodes: (' + JSON.stringify(nodes) + ')')
   }
 
-  const topo = topologicalSort(Graph.parent(nodeObjs[0], graph))
+  const topo = topologicalSort(Graph.parent(nodeObjs[0], graph), graph)
   const critical = criticalNodes(nodeObjs, topo, graph)
   const blockedNodes = critical.filter(blocked(nodeObjs, graph))
   if (blockedNodes.length > 0) {
