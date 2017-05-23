@@ -22,6 +22,7 @@ import {mergeNodes} from '../graph/internal'
 import {topologicalSort} from '../algorithm'
 import cuid from 'cuid'
 import {assertGraph} from '../assert'
+import inplaceCompoundify from './inplaceCompoundify'
 
 function uniquePortName (port) {
   return port.port + port.node
@@ -306,6 +307,7 @@ function moveSubsetIntoCompound (subset, cmpdId) {
 */
 export const compoundify = curry((parent, nodes, graph, ...cbs) => {
   assertGraph(graph, 3, 'compoundify')
+  if (graph.inplace) return inplaceCompoundify(parent, nodes, graph, ...cbs)
   const cb = Graph.flowCallback(cbs)
   const fn = cb
   if (nodes.length < 1) return fn([], graph)

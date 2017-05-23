@@ -3,6 +3,7 @@
 import chai from 'chai'
 import * as Graph from '../../src/graph'
 import {includePredecessor, excludeNode, unCompound, compoundify} from '../../src/rewrite/compound'
+import compoundifyInplace from '../../src/rewrite/inplaceCompoundify'
 import * as Node from '../../src/node'
 import _ from 'lodash'
 
@@ -475,6 +476,158 @@ describe('Rewrite basic API', () => {
         ]
         compoundify('/fac', nodes, graph, (comp, resGraph) => {
           expect(Node.inputPorts(comp)).to.have.length(2)
+        })
+      })
+
+      describe('[Inpalce]', () => {
+        it('Can compoundify one node', () => {
+          var graph = Graph.flow(
+            Graph.addNode({name: 'a', ports: [{port: 'out', kind: 'output', type: 'g'}], atomic: true}),
+            Graph.addNode({name: 'b', ports: [{port: 'out', kind: 'output', type: 'g'}, {port: 'in', kind: 'input', type: 'g'}], atomic: true}),
+            Graph.addNode({name: 'c', ports: [{port: 'in', kind: 'input', type: 'g'}], atomic: true}),
+            Graph.addEdge({from: 'a@out', to: 'b@in'}),
+            Graph.addEdge({from: 'b@out', to: 'c@in'})
+          )()
+          const cmpd = compoundifyInplace(graph, ['b'], graph)
+          expect(Graph.successors('a', cmpd)).to.have.length(1)
+          expect(Graph.node(Graph.successors('a', cmpd)[0], cmpd).atomic).to.be.false
+          expect(Graph.predecessors('c', cmpd)).to.have.length(1)
+          expect(Graph.node(Graph.predecessors('c', cmpd)[0], cmpd).atomic).to.be.false
+        })
+
+        it('Creates new generic type names for ports', () => {
+          var graph = () => Graph.flow(
+            Graph.addNode({name: 'a', ports: [{port: 'out', kind: 'output', type: 'g'}], atomic: true}),
+            Graph.addNode({name: 'b', ports: [{port: 'out', kind: 'output', type: 'g'}, {port: 'in', kind: 'input', type: 'g'}], atomic: true}),
+            Graph.addNode({name: 'c', ports: [{port: 'in', kind: 'input', type: 'g'}], atomic: true}),
+            Graph.addEdge({from: 'a@out', to: 'b@in'}),
+            Graph.addEdge({from: 'b@out', to: 'c@in'})
+          )()
+          var graph1 = graph()
+          compoundifyInplace(graph1, ['b'], graph1, (c, g) => {
+            expect(c.ports.every((p) => p.type !== 'g')).to.be.true
+          })
+          var graph2 = graph()
+          compoundifyInplace(graph2, ['c', 'b'], graph2, (c, g) => {
+            expect(c.ports.every((p) => p.type !== 'g')).to.be.true
+          })
+        })
+
+        it('Can compoundify all nodes in a compound layer', () => {
+          var graph = Graph.flow(
+            Graph.addNode({name: 'a', ports: [{port: 'out', kind: 'output', type: 'g'}], atomic: true}),
+            Graph.addNode({name: 'b', ports: [{port: 'out', kind: 'output', type: 'g'}, {port: 'in', kind: 'input', type: 'g'}], atomic: true}),
+            Graph.addNode({name: 'c', ports: [{port: 'in', kind: 'input', type: 'g'}], atomic: true}),
+            Graph.addEdge({from: 'a@out', to: 'b@in'}),
+            Graph.addEdge({from: 'b@out', to: 'c@in'})
+          )()
+          const cmpd = compoundifyInplace(graph, ['b', 'a', 'c'], graph)
+          expect(Graph.nodes(cmpd)).to.have.length(1)
+          expect(Graph.nodes(Graph.nodes(cmpd)[0])).to.have.length(3)
+        })
+
+        it('Can compoundify all nodes in a compound layer with multiple ends', () => {
+          var graph = Graph.flow(
+            Graph.addNode({name: 'a', ports: [{port: 'out', kind: 'output', type: 'g'}], atomic: true}),
+            Graph.addNode({name: 'b', ports: [{port: 'out', kind: 'output', type: 'g'}, {port: 'in', kind: 'input', type: 'g'}], atomic: true}),
+            Graph.addNode({name: 'c', ports: [{port: 'in', kind: 'input', type: 'g'}], atomic: true}),
+            Graph.addNode({name: 'd', ports: [{port: 'in', kind: 'input', type: 'g'}], atomic: true}),
+            Graph.addEdge({from: 'a@out', to: 'b@in'}),
+            Graph.addEdge({from: 'b@out', to: 'c@in'}),
+            Graph.addEdge({from: 'b@out', to: 'd@in'})
+          )()
+          const cmpd = compoundifyInplace(graph, ['b', 'a', 'c', 'd'], graph)
+          expect(Graph.nodes(cmpd)).to.have.length(1)
+          expect(Graph.nodes(Graph.nodes(cmpd)[0])).to.have.length(4)
+        })
+
+        it('can compoundify compound nodes', () => {
+          const cmpd = Graph.flow(
+            Graph.addNode({name: 'N', ports: [{port: 'in', kind: 'input', type: 'g'}, {port: 'out', kind: 'output', type: 'g'}]}),
+            Graph.addEdge({from: '@in', to: 'N@in'}),
+            Graph.addEdge({from: 'N@out', to: '@out'})
+          )(Graph.compound({name: 'C', ports: [{port: 'in', kind: 'input', type: 'g'}, {port: 'out', kind: 'output', type: 'g'}]}))
+          const graph = Graph.flow(
+            Graph.addNode(cmpd)
+          )()
+          const cmpdGraph = compoundifyInplace(graph, ['C'], graph)
+          expect(cmpdGraph).to.be.ok
+          expect(Graph.nodes(cmpdGraph)).to.have.length(1)
+          expect(Graph.nodesDeep(cmpdGraph)).to.have.length(4)
+
+          const graph2 = Graph.flow(
+            Graph.addNode({name: 'pred1', ports: [{port: 'in', kind: 'input', type: 'g'}, {port: 'out', kind: 'output', type: 'g'}]}),
+            Graph.addNode({name: 'pred2', ports: [{port: 'in', kind: 'input', type: 'g'}, {port: 'out', kind: 'output', type: 'g'}]}),
+            Graph.addNode({name: 'succ1', ports: [{port: 'in', kind: 'input', type: 'g'}, {port: 'out', kind: 'output', type: 'g'}]}),
+            Graph.addNode(cmpd),
+            Graph.addEdge({from: 'pred1@out', to: 'pred2@in'}),
+            Graph.addEdge({from: 'pred2@out', to: 'C@in'}),
+            Graph.addEdge({from: 'C@out', to: 'succ1@in'})
+          )()
+          const cmpdGraph2 = compoundifyInplace(graph2, ['pred2', 'C'], graph2)
+          expect(cmpdGraph2).to.be.ok
+          expect(Graph.nodes(cmpdGraph2)).to.have.length(3)
+        })
+
+        it('» Can handle testing multiple blocked nodes', () => {
+          const graph = Graph.flow(
+            Graph.addNode(ifNode({name: 'if'})),
+            Graph.addNode({name: 'a1', ports: [{port: 'out', kind: 'output', type: 'Number'}]}),
+            Graph.addNode({name: 'a', ports: [{port: 'in', kind: 'input', type: 'Number'}, {port: 'out', kind: 'output', type: 'Number'}]}),
+            Graph.addNode({name: 'b', ports: [{port: 'out', kind: 'output', type: 'Number'}]}),
+            Graph.addEdge({from: 'a1@out', to: 'a@in'}),
+            Graph.addEdge({from: 'a@out', to: 'if@a'}),
+            Graph.addEdge({from: 'b@out', to: 'if@b'}),
+            Graph.addEdge({from: '@cond', to: 'if@cond'}),
+            Graph.addEdge({from: 'if@out', to: '@out'})
+          )(Graph.compound({ports: [{port: 'cond', kind: 'input', type: 'Bool'}, {port: 'out', kind: 'output', type: 'generic'}]}))
+
+          const rewGraph = compoundifyInplace(graph, ['a', 'a1'], graph)
+          expect(Graph.nodes(rewGraph)).to.have.length(3)
+          expect(Graph.hasNode('a', rewGraph)).to.not.be.true
+          expect(Graph.hasNode('a1', rewGraph)).to.not.be.true
+        })
+
+        it('Can compoundify multiple nodes', () => {
+          var graph = Graph.flow(
+            Graph.addNode({name: 'a', ports: [{port: 'out', kind: 'output', type: 'g'}], atomic: true}),
+            Graph.addNode({name: 'b', ports: [{port: 'out', kind: 'output', type: 'g'}, {port: 'in', kind: 'input', type: 'g'}], atomic: true}),
+            Graph.addNode({name: 'c', ports: [{port: 'out', kind: 'output', type: 'g'}, {port: 'in', kind: 'input', type: 'g'}], atomic: true}),
+            Graph.addNode({name: 'd', ports: [{port: 'in', kind: 'input', type: 'g'}, {port: 'in2', kind: 'input', type: 'g'}], atomic: true}),
+            Graph.addEdge({from: 'a@out', to: 'b@in'}),
+            Graph.addEdge({from: 'a@out', to: 'd@in2'}),
+            Graph.addEdge({from: 'b@out', to: 'c@in'}),
+            Graph.addEdge({from: 'c@out', to: 'd@in'})
+          )()
+          const cmpd = compoundifyInplace(graph, ['b', 'c'], graph)
+          expect(Graph.successors('a', cmpd)).to.have.length(2)
+          expect(Graph.node(Graph.predecessors('d@in', cmpd)[0], cmpd).atomic).to.be.false
+        })
+
+        it('Fails if the node is blocked', () => {
+          var graph = Graph.flow(
+            Graph.addNode({name: 'a', ports: [{port: 'out', kind: 'output', type: 'g'}], atomic: true}),
+            Graph.addNode({name: 'b', ports: [{port: 'out', kind: 'output', type: 'g'}, {port: 'in', kind: 'input', type: 'g'}], atomic: true}),
+            Graph.addNode({name: 'c', ports: [{port: 'in', kind: 'input', type: 'g'}], atomic: true}),
+            Graph.addEdge({from: 'a@out', to: 'b@in'}),
+            Graph.addEdge({from: 'b@out', to: 'c@in'})
+          )()
+          expect(() => compoundifyInplace(graph, ['a', 'c'], graph)).to.throw(Error)
+        })
+
+
+        it('Can handle untypified factorial example', function () {
+          const graph = Graph.fromFile('test/fixtures/fac_no_types.json')
+          const addNode = Graph.node('/math/add', graph)
+          const nodes = [
+            addNode,
+            Graph.node('/math/multiply', graph),
+            Graph.successors(addNode, graph)[0],
+            Graph.predecessor(Node.port('summand2', addNode), graph)
+          ]
+          compoundifyInplace('/fac', nodes, graph, (comp, resGraph) => {
+            expect(Node.inputPorts(comp)).to.have.length(2)
+          })
         })
       })
     })
