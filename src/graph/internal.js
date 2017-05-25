@@ -9,11 +9,12 @@ import curry from 'lodash/fp/curry'
 import flatten from 'lodash/fp/flatten'
 import pick from 'lodash/fp/pick'
 import set from 'lodash/fp/set'
+import setIn from 'lodash/set'
 import omit from 'lodash/fp/omit'
 import merge from 'lodash/fp/merge'
 import * as Node from '../node'
 import {equal as pathEqual, isRoot, relativeTo, join} from '../compoundPath'
-import {setPath as compoundSetPath, isCompound} from '../compound'
+import {setPath as compoundSetPath} from '../compound'
 import * as changeSet from '../changeSet'
 import {flowCallback} from './flow'
 
@@ -40,7 +41,7 @@ function nodesDeepInternal (graph) {
 
 export function store (what, key, graph) {
   if (!graph.___store) initStore(graph)
-  set(key, what, graph)
+  setIn(graph.___store, key, what)
   return what
 }
 
@@ -194,11 +195,7 @@ export const unID = (node) => {
 export function addNodeInternal (node, graph, path, checkNode, ...cbs) {
   const cb = flowCallback(cbs)
   var newNode
-  if (isCompound(node)) {
-    newNode = setPath(Node.create(unID(node)), path)
-  } else {
-    newNode = setPath(Node.create(unID(node)), path)
-  }
+  newNode = setPath(Node.create(unID(node)), path)
   checkNode(graph, newNode)
   if (Node.hasChildren(newNode)) {
     newNode = set('edges', replaceEdgeIDs(newNode.edges, newNode.id, node.id), newNode)

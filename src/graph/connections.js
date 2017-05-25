@@ -282,6 +282,24 @@ export function successorsPort (targetPort, graph) {
   return access(name, graph) || store(successors(targetPort, graph), name, graph)
 }
 
+function updateArray (name, value, graph) {
+  var v = access(name, graph)
+  if (v) {
+    store(v.push(value), name, graph)
+  } else {
+    store([value], name, graph)
+  }
+}
+
+export function cacheConnections (graph) {
+  const edges = edgesDeep(graph)
+  for (const e of edges) {
+    if (e.layer !== 'dataflow') continue
+    updateArray(nameNode('successorsNode', e.from.node), e.to, graph)
+    updateArray(nameNode('predecessorsNode', e.to.node), e.from, graph)
+  }
+}
+
 /**
  * Get the dataflow successor of a node in the graph. This method works in O(1) when the cache is initialized.
  * @param {Node|String} source The source node as an ID or a node object.
@@ -289,7 +307,7 @@ export function successorsPort (targetPort, graph) {
  * @returns {Port[]} A list of ports that succeed the node.
  */
 export function successorsNode (sourceNode, graph) {
-  const name = nameNode('successorNode', sourceNode)
+  const name = nameNode('successorsNode', sourceNode)
   return access(name, graph) || store(successors(sourceNode, graph), name, graph)
 }
 
