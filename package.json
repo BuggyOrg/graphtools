@@ -1,6 +1,6 @@
 {
   "name": "@buggyorg/graphtools",
-  "version": "0.4.0-pre.37",
+  "version": "0.4.0-pre.38",
   "description": "Tools for processing buggy graphs.",
   "main": "lib/api.js",
   "scripts": {
