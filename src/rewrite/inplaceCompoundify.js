@@ -12,11 +12,9 @@ function uniquePortName (port) {
   return port.port + port.node
 }
 
-const uniqify = (port) => {
+const uniqify = (type, node) => {
   // unique type names should not be part of this function
-  const t = (typeof (port.type) === 'string' && port.type[0].toLowerCase() === port.type[0]) ? port.type + port.node : port.type
-  // const t = port.type
-  return Object.assign({}, port, {port: uniquePortName(port), type: t})
+  return (typeof (type) === 'string' && type[0].toLowerCase() === type[0]) ? type + node : type
 }
 
 export default function compoundify (parentLoc, subsetIn, graph, ...cbs) {
@@ -57,8 +55,8 @@ export default function compoundify (parentLoc, subsetIn, graph, ...cbs) {
   }
   parent.nodes = restNodes
 
-  const inputPorts = inE.map((e) => ({port: e.to.port + e.to.node, kind: 'input', type: uniqify(e.type)}))
-  const outputPorts = outE.map((e) => ({port: e.from.port + e.from.node, kind: 'output', type: uniqify(e.type)}))
+  const inputPorts = inE.map((e) => ({port: e.to.port + e.to.node, kind: 'input', type: uniqify(e.type, e.node)}))
+  const outputPorts = outE.map((e) => ({port: e.from.port + e.from.node, kind: 'output', type: uniqify(e.type, e.node)}))
   const comp = Graph.compound({ports: inputPorts.concat(outputPorts)})
   comp.path = parent.path.concat([comp.id])
   comp.nodes = innerNodes
