@@ -8,9 +8,9 @@ import * as Node from '../node'
 import * as changeSet from '../changeSet'
 import {assertGraph} from '../assert'
 import {flow, flowCallback, Let, sequential} from './flow'
-import {nodeBy, mergeNodes, rePath, addNodeInternal, unID, nodesDeep, access, store} from './internal'
+import {nodeBy, mergeNodes, rePath, addNodeInternal, unID, nodesDeep, access, store, forget} from './internal'
 import {query, toString} from '../location'
-import {incidents} from './connections'
+import {incidents, isFrom, pointsTo} from './connections'
 import {createNode} from '../component'
 import {removeEdge, realizeEdgesForNode} from './edge'
 
@@ -318,6 +318,33 @@ const removeNodeInternal = curry((query, deleteEdges, graph, ...cbs) => {
     cb(remNode, replaceNode(basePath, newSubGraph, graph)))(parentGraph)
 })
 
+function removeNodeInternalInplace (query, deleteEdges, graph, ...cbs) {
+  const cb = flowCallback(cbs)
+  var remNode = node(query, graph)
+  var parentNode = parent(remNode, graph)
+  var idx = parentNode.nodes.findIndex((v) => Node.equal(remNode, v))
+  if (deleteEdges) {
+    incidents(remNode, graph)
+      .forEach((e) => {
+        var remEdges = parentNode.edges
+          .map((e, eIdx) => (isFrom(remNode, graph, e) || pointsTo(remNode, graph, e)) ? eIdx : -1)
+          .filter((index) => index !== -1)
+        for (var i = remEdges.length - 1; i >= 0; i--) {
+          parentNode.edges.splice(remEdges[i], 1)
+        }
+      })
+    forget('edges', parentNode)
+    forget('edgesDeep', parentNode)
+    forget('edgesDeep', graph)
+  }
+  parentNode.nodes.splice(idx, 1)
+  forget('nodes', parent)
+  forget('nodesDeep', parent)
+  forget('nodesDeep', graph)
+  forget(remNode.id, graph)
+  return cb(remNode, graph)
+}
+
 /**
  * @function
  * @name removeNode
@@ -331,7 +358,11 @@ export const removeNode = curry((loc, graph, ...cbs) => {
   if (parent(loc, graph) && Node.isAtomic(parent(loc, graph))) {
     throw new Error('Cannot remove child nodes of an atomic node. Tried deleting : ' + loc)
   }
-  return removeNodeInternal(loc, true, graph, ...cbs)
+  if (graph.inplace) {
+    return removeNodeInternalInplace(loc, true, graph, ...cbs)
+  } else {
+    return removeNodeInternal(loc, true, graph, ...cbs)
+  }
 })
 
 function nodeParentPath (path, graph) {

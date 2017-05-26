@@ -20,31 +20,17 @@ const uniqify = (port) => {
 }
 
 export default function compoundify (parentLoc, subsetIn, graph, ...cbs) {
-  // console.time('compoundify')
-  // console.time('c-checking...')
   const cb = Graph.flowCallback(cbs)
-  // console.time('parent')
   var parent = Graph.node(parentLoc, graph)
-  // console.timeEnd('parent')
-  // console.time('subsetMapping')
   const subset = subsetIn.map((n) => Node.id(Graph.node(n, graph)))
   const subsetSet = new Set(subset.map((n) => Graph.node(n, graph)).map(Node.id))
-  // console.timeEnd('subsetMapping')
-  // console.time('connCache')
   Graph.cacheConnections(graph)
-  // console.timeEnd('connCache')
-  // console.time('predecessors')
   const nonSubPred = flatten(predecessorsUpTo(subset, subset, graph)).map((n) => n.id).filter((nId) => !subsetSet.has(nId))
-  // console.timeEnd('predecessors')
-  // console.time('succs')
   const nonSubSucc = flatten(subset.map((n) => Graph.successorsNode(n, graph))).map((n) => n.node).filter((nId) => !subsetSet.has(nId))
-  // console.timeEnd('succs')
   const i = (intersection(new Set(nonSubPred), new Set(nonSubSucc)))
   if (i.size !== 0) {
     throw new Error('Cannot compoundify subset: "' + subset + '". It would form a loop with: "' + Array.from(i) + '"')
   }
-  // console.timeEnd('c-checking...')
-  // console.time('c-edges...')
   const edges = Graph.edges(parent).filter((e) => e.layer === 'dataflow')
   var innerE = []
   var inE = []
@@ -60,9 +46,7 @@ export default function compoundify (parentLoc, subsetIn, graph, ...cbs) {
     else rest.push(e)
   }
   parent.edges = rest
-  // console.timeEnd('c-edges...')
 
-  // console.time('c-nodes...')
   const nodes = Graph.nodes(parent)
   var innerNodes = []
   var restNodes = []
@@ -72,9 +56,7 @@ export default function compoundify (parentLoc, subsetIn, graph, ...cbs) {
     else restNodes.push(n)
   }
   parent.nodes = restNodes
-  // console.timeEnd('c-nodes...')
 
-  // console.time('c-compound...')
   const inputPorts = inE.map((e) => ({port: e.to.port + e.to.node, kind: 'input', type: uniqify(e.type)}))
   const outputPorts = outE.map((e) => ({port: e.from.port + e.from.node, kind: 'output', type: uniqify(e.type)}))
   const comp = Graph.compound({ports: inputPorts.concat(outputPorts)})
@@ -87,8 +69,6 @@ export default function compoundify (parentLoc, subsetIn, graph, ...cbs) {
   parent.edges = parent.edges
     .concat(inE.map((e) => ({to: {node: comp.id, port: e.to.port + e.to.node}, from: e.from, layer: 'dataflow'})))
     .concat(outE.map((e) => ({to: e.to, from: {node: comp.id, port: e.from.port + e.from.node}, layer: 'dataflow'})))
-  // console.timeEnd('c-compound...')
-  // console.timeEnd('compoundify')
   resetStore(graph)
   do {
     resetStore(parent)
