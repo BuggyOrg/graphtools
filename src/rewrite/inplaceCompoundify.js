@@ -8,10 +8,6 @@ import {rePath, resetStore} from '../graph/internal'
 
 const {intersection} = setOps
 
-function uniquePortName (port) {
-  return port.port + port.node
-}
-
 const uniqify = (type, node) => {
   // unique type names should not be part of this function
   return (typeof (type) === 'string' && type[0].toLowerCase() === type[0]) ? type + node : type
