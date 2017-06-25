@@ -69,6 +69,7 @@ const newID = (process.env.NODE_IDS) ? (() => { var cnt = 0; return () => 'comp_
  */
 export function create (node) {
   node = node || {}
+  if (node.edges && node.edges.length > 0 || (node.nodes && node.nodes.length > 0)) throw new Error('createCompound can only create new compounds without edges and sub nodes.')
   return _.merge({
     nodes: [],
     metaInformation: {},

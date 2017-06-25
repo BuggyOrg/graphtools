@@ -45,7 +45,7 @@ describe('Basic graph functions', () => {
     })
 
     it('Simple add edge test', () => {
-      var comp = Graph.addEdge({from: '@x', to: '@value'}, Graph.compound(graphJSON()))
+      var comp = Graph.addEdge({from: '@x', to: '@value'}, Graph.fromJSON(graphJSON()))
       expect(comp).to.be.ok
 
       expect(Graph.predecessors('', comp, {goIntoCompounds: true})).to.have.length(1)
@@ -57,7 +57,7 @@ describe('Basic graph functions', () => {
 
     it('Use addEdge @name notation', () => {
       var graph = Graph.fromJSON(graphJSON())
-      var cmpt = Graph.compound(graphJSON())
+      var cmpt = Graph.fromJSON(graphJSON())
       var out = Graph.addEdge({from: '@x', to: '@value'}, cmpt)
       var out2 = Graph.addEdge({from: '@x', to: '@value'}, graph)
       expect(out).to.be.ok
@@ -81,7 +81,7 @@ describe('Basic graph functions', () => {
     })
 
     it('Use addEdge #id@name notation', () => {
-      var out = Graph.addEdge({from: '#ciujt9kti0002lumr7poczkzx@x', to: '#ciujt9kti0002lumr7poczkzx@value'}, Graph.compound(graphJSON()))
+      var out = Graph.addEdge({from: '#ciujt9kti0002lumr7poczkzx@x', to: '#ciujt9kti0002lumr7poczkzx@value'}, Graph.fromJSON(graphJSON()))
       expect(out).to.be.ok
       expect(Graph.edgesDeep(out)).to.have.length(1)
     })
