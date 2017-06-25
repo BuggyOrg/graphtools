@@ -324,7 +324,8 @@ describe('Basic graph functions', () => {
       expect(Graph.hasNode('»c»c»b', graph)).to.be.true
     })
 
-    it('Can replace full compounds', () => {
+    it('Can replace full compounds', function () {
+      this.timeout(15000)
       const qsort = Graph.fromFile('./test/fixtures/qsort.json')
 
       const qnode = Graph.node('/quicksort', qsort)
