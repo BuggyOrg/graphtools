@@ -323,5 +323,18 @@ describe('Basic graph functions', () => {
       expect(Graph.hasNode('»c»c»a', graph)).to.be.true
       expect(Graph.hasNode('»c»c»b', graph)).to.be.true
     })
+
+    it('Can replace full compounds', () => {
+      const qsort = Graph.fromFile('./test/fixtures/qsort.json')
+
+      const qnode = Graph.node('/quicksort', qsort)
+      const parent = Graph.parent(qnode, qsort)
+      const newGraph = Graph.flow(
+        Graph.removeNode(qnode),
+        Graph.addNodeIn(parent, qnode)
+      )(qsort)
+      expect(Graph.successors('/partition-right', newGraph, {goIntoCompounds: true})).to.have.length(3)
+      expect(Graph.successors('/partition-left', newGraph, {goIntoCompounds: true})).to.have.length(3)
+    })
   })
 })

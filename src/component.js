@@ -176,8 +176,12 @@ const mapEdgeIDs = curry((map, edge) => {
  */
 export function createNode (reference, comp) {
   if (isCompound(comp)) {
-    const newNodes = children(comp).map(omit('id')).map(create)
-    const idMapping = fromPairs(zip(children(comp).map(nodeID), newNodes.map(nodeID)))
+    const storeID = (n) => { n.__id = n.id; return n }
+    const remStoredID = (n) => { delete n.__id; return n }
+    const newNodes = children(comp)
+      .map(storeID).map(omit('id')).map(create).map((n) => createNode({}, n)).map(remStoredID)
+    var idMapping = fromPairs(zip(children(comp).map(nodeID), newNodes.map(nodeID)))
+    if (comp.__id) idMapping[comp.__id] = comp.id
     return _.merge({}, reference, comp, {
       nodes: newNodes,
       edges: (comp.edges || []).map(mapEdgeIDs(idMapping))
