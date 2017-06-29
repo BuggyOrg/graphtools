@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: edge.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: edge.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * Accessible via `require('@buggyorg/graphtools').Edge`
+ * @module Edge */
+
+import curry from 'lodash/fp/curry'
+import merge from 'lodash/fp/merge'
+import _ from 'lodash'
+import * as Port from './port'
+import * as Node from './node'
+
+function normalizeStructure (edge) {
+  if (!_.has(edge, 'from') || !_.has(edge, 'to')) {
+    throw new Error('The edge format is not valid. You need to have a from and to value in.\n\n' + JSON.stringify(edge, null, 2) + '\n')
+  }
+  var layer = edge.layer || 'dataflow'
+  if (layer !== 'dataflow') {
+    var newEdge = _.clone(edge)
+    if (Node.isValid(edge.from)) {
+      newEdge.from = Node.id(edge.from)
+    }
+    if (Node.isValid(edge.to)) {
+      newEdge.to = Node.id(edge.to)
+    }
+    return newEdge
+  }
+  if ((typeof (edge.from) === 'string' &amp;&amp; edge.from[0] === '/') ||
+    (typeof (edge.to) === 'string' &amp;&amp; edge.to[0] === '/')) {
+    return merge(edge, {query: true,
+        from: (Port.isPort(edge.from)) ? Port.normalize(edge.from) : edge.from,
+        to: (Port.isPort(edge.to)) ? Port.normalize(edge.to) : edge.to
+      })
+  } if (edge.outPort &amp;&amp; edge.inPort) {
+    return _.merge({}, _.omit(edge, ['outPort', 'inPort']),
+      {layer, from: Port.normalize({node: edge.from, port: edge.outPort}), to: Port.normalize({node: edge.to, port: edge.inPort})})
+  } else if (!edge.outPort &amp;&amp; !edge.inPort &amp;&amp; Port.isPort(edge.from) &amp;&amp; Port.isPort(edge.to)) {
+    return { from: Port.normalize(edge.from), to: Port.normalize(edge.to), layer }
+  } else {
+    throw new Error('Malformed edge. Cannot translate format into standard format.\nEdge: ' + JSON.stringify(edge))
+  }
+}
+
+/**
+ * Normalizes the edge into the standard format
+ *
+ * ```
+ *  {from: '&lt;port>', to: '&lt;port>'}
+ * ```
+ *
+ * It accepts the following short forms:
+ *
+ * ```
+ *  {from: '&lt;node>@&lt;port>', to: '&lt;node>@&lt;port>'}
+ *  {from: '@&lt;port>', to: '&lt;node>@&lt;port>'}
+ *  {from: '&lt;node>@&lt;port>', to: '@&lt;port>'}
+ *  {from: '@&lt;port>', to: '@&lt;port>'}
+ *  {from: '&lt;node>', to: '&lt;node>', outPort: '&lt;port-name>', inPort: '&lt;port-name>'}
+ * ```
+ *
+ * The format must be consistent, you cannot have a mixture for `from` and `to`.
+ * It is not possible to always add those normalized edges into the graph. They must contain
+ * valid IDs of the graph. Use `Graph.normalize` for this.
+ *
+ * @param {Edge} edge The edge object that should be normalized.
+ * @returns {Edge} The normalized form of the edge.
+ * @throws {Error} An error is thrown if the edge is not in a consistent format.
+ */
+export function normalize (edge) {
+  var newEdge = normalizeStructure(edge)
+  if (typeof (newEdge.from) === 'object' &amp;&amp; newEdge.from.node.length === 0) {
+    newEdge.innerCompoundOutput = true
+  }
+  if (typeof (newEdge.to) === 'object' &amp;&amp; newEdge.to.node.length === 0) {
+    newEdge.innerCompoundInput = true
+  }
+  return newEdge
+}
+
+export function isEdgeToParent (edge) {
+  return edge.innerCompoundInput
+}
+
+export function isInnerEdge (edge) {
+  return !edge.innerCompoundInput &amp;&amp; !edge.innerCompoundOutput
+}
+
+export function isEdgeFromParent (edge) {
+  return edge.innerCompoundOutput
+}
+
+/**
+ * @function
+ * @name equal
+ * @description Checks whether two normalized edges are equal.
+ * @param {Edge} edge1 The first edge for the comparison.
+ * @param {Edge} edge2 The second edge for the comparison.
+ * @returns {boolean} True if the edges are equal (i.e. they connect the same ports), false otherwise.
+ */
+export const equal = curry((edge1, edge2) => {
+  if (edge1.layer === 'dataflow') {
+    return Port.node(edge1.from) === Port.node(edge2.from) &amp;&amp; Port.node(edge1.to) === Port.node(edge2.to) &amp;&amp;
+      Port.portName(edge1.from) === Port.portName(edge2.from) &amp;&amp; Port.portName(edge1.to) === Port.portName(edge2.to) &amp;&amp;
+      edge1.layer === edge2.layer
+  } else {
+    return edge1.from === edge2.from &amp;&amp; edge1.to === edge2.to &amp;&amp; edge1.layer === edge2.layer
+  }
+})
+
+/**
+ * Returns a copy of the edge where the path is prefixed with the specified path. [Does nothing currently... can probably be removed. Is used in ./compound.js]
+ * @param {Edge} edge The edge that will be prefixed
+ * @param {CompoundPath} path The compound path that prefixes the edge paths.
+ * @returns {Edge} A new edge that has the prefixed paths.
+ */
+export function setPath (edge, path) {
+  return edge
+}
+
+/**
+ * Gets the type of an edge. Note that not every edge must have a type and that the type is not stored inside the json document.
+ * If you use the graph functions to iterate over edges you always get the type (if available) with the edge.
+ * @example &lt;caption>Get an edge via a graph method and then get its edge.&lt;/caption>
+ * var edge = Graph.incident(port, graph)
+ * var type = Edge.type(edge)
+ * @example &lt;caption>It will yield undefined if you simply access an edge in the json document, do not do that.&lt;/caption>
+ * var edge = graph.edges[0]
+ * //this will return undefined
+ * var type = Edge.type(edge) // = undefined
+ * @param {Edge} edge The edge to use.
+ * @returns {Type|undefined} Either a real type, a typename or `undefined`. Some edges do not have type information. Usually non-dataflow edges like
+ * recursion indicators. Those will yield `undefined`.
+ */
+export function type (edge) {
+  return edge.type
+}
+
+/**
+ * Explicitly sets the type of the edge. The type of an edge is determined by the connecting ports.
+ * @param {Type} type The type of the edge.
+ * @param {Edge} edge The edge that should get the type.
+ * @returns {Edge} A new edge that has a field for the type.
+ */
+export function setType (type, edge) {
+  if (isBetweenPorts(edge)) {
+    return merge(edge, {type, from: Port.setType(type, edge.from), to: Port.setType(type, edge.to)})
+  } else if (!isBetweenNodes(edge)) {
+    throw new Error('[Edge.setType] Cannot handle mixed edges (from port to node or from node into port)')
+  }
+  return merge({type}, edge)
+}
+
+
+/**
+ * Checks whether an object is a valid edge.
+ * @param {Object} edge The object to test.
+ * @returns {Boolean} True if the object is an edge, false otherwise.
+ */
+export function isValid (edge) {
+  return typeof (edge) === 'object' &amp;&amp; edge.from &amp;&amp; edge.to
+}
+
+/**
+ * Checks if the edge connects two ports.
+ * @param {Edge} edge The edge to test
+ * @returns {Boolean} True if the edge connects two ports, false otherwise.
+ */
+export function isBetweenPorts (edge) {
+  return typeof (edge) === 'object' &amp;&amp;
+    typeof (edge.from) === 'object' &amp;&amp; edge.from.port &amp;&amp;
+    typeof (edge.to) === 'object' &amp;&amp; edge.to.port
+}
+
+/**
+ * Checks if the edge connects two nodes (and not ports of those nodes).
+ * @param {Edge} edge The edge to test
+ * @returns {Boolean} True if the edge connects two nodes, false otherwise (e.g. if it is an edge between ports).
+ */
+export function isBetweenNodes (edge) {
+  return isValid(edge) &amp;&amp; !isBetweenPorts(edge)
+}
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-Algorithm.html">Algorithm</a></li><li><a href="module-Component.html">Component</a></li><li><a href="module-CompoundPath.html">CompoundPath</a></li><li><a href="module-Edge.html">Edge</a></li><li><a href="module-Node.html">Node</a></li><li><a href="module-Port.html">Port</a></li></ul><h3>Global</h3><ul><li><a href="global.html#addComponent">addComponent</a></li><li><a href="global.html#addEdge">addEdge</a></li><li><a href="global.html#addNode">addNode</a></li><li><a href="global.html#addNodeByPath">addNodeByPath</a></li><li><a href="global.html#addNodeIn">addNodeIn</a></li><li><a href="global.html#addNodeTuple">addNodeTuple</a></li><li><a href="global.html#applyChangeSet">applyChangeSet</a></li><li><a href="global.html#applyChangeSetInplace">applyChangeSetInplace</a></li><li><a href="global.html#applyChangeSets">applyChangeSets</a></li><li><a href="global.html#areConnected">areConnected</a></li><li><a href="global.html#atomics">atomics</a></li><li><a href="global.html#blocked">blocked</a></li><li><a href="global.html#childrenOf">childrenOf</a></li><li><a href="global.html#clone">clone</a></li><li><a href="global.html#component">component</a></li><li><a href="global.html#componentIds">componentIds</a></li><li><a href="global.html#components">components</a></li><li><a href="global.html#compound">compound</a></li><li><a href="global.html#compoundify">compoundify</a></li><li><a href="global.html#compounds">compounds</a></li><li><a href="global.html#convertToLambda">convertToLambda</a></li><li><a href="global.html#criticalNodes">criticalNodes</a></li><li><a href="global.html#distribute">distribute</a></li><li><a href="global.html#distributeSequential">distributeSequential</a></li><li><a href="global.html#distributeWith">distributeWith</a></li><li><a href="global.html#edge">edge</a></li><li><a href="global.html#edges">edges</a></li><li><a href="global.html#edgesDeep">edgesDeep</a></li><li><a href="global.html#empty">empty</a></li><li><a href="global.html#excludeNode">excludeNode</a></li><li><a href="global.html#flow">flow</a></li><li><a href="global.html#flowCallback">flowCallback</a></li><li><a href="global.html#fromFile">fromFile</a></li><li><a href="global.html#fromJSON">fromJSON</a></li><li><a href="global.html#fromJSONUnsafe">fromJSONUnsafe</a></li><li><a href="global.html#fromString">fromString</a></li><li><a href="global.html#get">get</a></li><li><a href="global.html#getMetaKey">getMetaKey</a></li><li><a href="global.html#getNodeMetaKey">getNodeMetaKey</a></li><li><a href="global.html#hasComponent">hasComponent</a></li><li><a href="global.html#hasEdge">hasEdge</a></li><li><a href="global.html#hasNode">hasNode</a></li><li><a href="global.html#identifies">identifies</a></li><li><a href="global.html#idToPath">idToPath</a></li><li><a href="global.html#incidents">incidents</a></li><li><a href="global.html#includePredecessor">includePredecessor</a></li><li><a href="global.html#inIncident">inIncident</a></li><li><a href="global.html#inIncidents">inIncidents</a></li><li><a href="global.html#insertComponent">insertComponent</a></li><li><a href="global.html#insertEdge">insertEdge</a></li><li><a href="global.html#insertNode">insertNode</a></li><li><a href="global.html#isChangeSet">isChangeSet</a></li><li><a href="global.html#isFrom">isFrom</a></li><li><a href="global.html#isomorph">isomorph</a></li><li><a href="global.html#isPortNotation">isPortNotation</a></li><li><a href="global.html#Let">Let</a></li><li><a href="global.html#location">location</a></li><li><a href="global.html#lowestCommonAncestors">lowestCommonAncestors</a></li><li><a href="global.html#mergeNodes">mergeNodes</a></li><li><a href="global.html#meta">meta</a></li><li><a href="global.html#namedFlow">namedFlow</a></li><li><a href="global.html#node">node</a></li><li><a href="global.html#nodeBy">nodeBy</a></li><li><a href="global.html#nodeByPath">nodeByPath</a></li><li><a href="global.html#nodeNames">nodeNames</a></li><li><a href="global.html#nodes">nodes</a></li><li><a href="global.html#nodesBy">nodesBy</a></li><li><a href="global.html#nodesDeep">nodesDeep</a></li><li><a href="global.html#nodesDeepBy">nodesDeepBy</a></li><li><a href="global.html#outIncidents">outIncidents</a></li><li><a href="global.html#parent">parent</a></li><li><a href="global.html#parseCompoundPath">parseCompoundPath</a></li><li><a href="global.html#pointsTo">pointsTo</a></li><li><a href="global.html#port">port</a></li><li><a href="global.html#predecessor">predecessor</a></li><li><a href="global.html#predecessorNode">predecessorNode</a></li><li><a href="global.html#predecessorPort">predecessorPort</a></li><li><a href="global.html#predecessors">predecessors</a></li><li><a href="global.html#predecessorsNode">predecessorsNode</a></li><li><a href="global.html#predecessorsNodePort">predecessorsNodePort</a></li><li><a href="global.html#predecessorsPort">predecessorsPort</a></li><li><a href="global.html#predecessorsUntil">predecessorsUntil</a></li><li><a href="global.html#predecessorsUpTo">predecessorsUpTo</a></li><li><a href="global.html#query">query</a></li><li><a href="global.html#realizeEdgesForNode">realizeEdgesForNode</a></li><li><a href="global.html#references">references</a></li><li><a href="global.html#removeComponent">removeComponent</a></li><li><a href="global.html#removeEdge">removeEdge</a></li><li><a href="global.html#removeMetaKey">removeMetaKey</a></li><li><a href="global.html#removeNode">removeNode</a></li><li><a href="global.html#removeNodeMetaKey">removeNodeMetaKey</a></li><li><a href="global.html#rePath">rePath</a></li><li><a href="global.html#replaceByCall">replaceByCall</a></li><li><a href="global.html#replaceByThunk">replaceByThunk</a></li><li><a href="global.html#replaceNode">replaceNode</a></li><li><a href="global.html#replacePort">replacePort</a></li><li><a href="global.html#sameParents">sameParents</a></li><li><a href="global.html#sameParentsNodes">sameParentsNodes</a></li><li><a href="global.html#sequential">sequential</a></li><li><a href="global.html#set">set</a></li><li><a href="global.html#setMeta">setMeta</a></li><li><a href="global.html#setMetaKey">setMetaKey</a></li><li><a href="global.html#setNode">setNode</a></li><li><a href="global.html#setNodeMeta">setNodeMeta</a></li><li><a href="global.html#setNodeMetaKey">setNodeMetaKey</a></li><li><a href="global.html#setPortName">setPortName</a></li><li><a href="global.html#successors">successors</a></li><li><a href="global.html#successorsNode">successorsNode</a></li><li><a href="global.html#successorsPort">successorsPort</a></li><li><a href="global.html#toJSON">toJSON</a></li><li><a href="global.html#unCompound">unCompound</a></li><li><a href="global.html#updateComponent">updateComponent</a></li><li><a href="global.html#updateEdge">updateEdge</a></li><li><a href="global.html#updateMetaKey">updateMetaKey</a></li><li><a href="global.html#updateNode">updateNode</a></li><li><a href="global.html#updateNodeMetaKey">updateNodeMetaKey</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.3</a> on Thu Jun 29 2017 17:41:13 GMT+0200 (CEST)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: graph/edge.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: graph/edge.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>
+import find from 'lodash/fp/find'
+import curry from 'lodash/fp/curry'
+import merge from 'lodash/fp/merge'
+import flatten from 'lodash/fp/flatten'
+import groupBy from 'lodash/fp/groupBy'
+import toPairs from 'lodash/fp/toPairs'
+import * as Port from '../port'
+import * as Node from '../node'
+import * as Edge from '../edge'
+import {assertGraph} from '../assert'
+import {equal, isRoot} from '../compoundPath'
+import {node, port, hasPort, hasNode, nodesDeep, parent, replaceNode} from './node'
+import * as changeSet from '../changeSet'
+import {location, identifies as locIdentifies} from '../location'
+import {incidents} from './connections'
+import {access, store} from './internal'
+
+/**
+ * Returns a list of edges in the graph. Each edge also has an extra field identifying the parent
+ * node to which the edge belongs in the hierarchy.
+ * @example &lt;caption>Getting all the edges in a graph&lt;/caption>
+ * edgesDeep(graph) // -> [{from: ..., to: ..., layer: ..., parent: '#...'}, ...]
+ * @param {PortGraph} graph The graph.
+ * @returns {Edges[]} A list of edges.
+ */
+export function edgesDeep (graph) {
+  return access('edgesDeep', graph) ||
+        store(flatten(nodesDeep(graph).map((parent) =>
+          edges(parent).map((e) => merge(e, {parent: Node.id(parent)})))), 'edgesDeep', graph)
+}
+
+/**
+ * Returns a list of edges in the graph layer. Each edge also has an extra field identifying the parent
+ * node to which the edge belongs in the hierarchy. This function will not recurse into compounds, use edgesDeep for that.
+ * @example &lt;caption>Getting the edges in a graph&lt;/caption>
+ * edges(graph) // -> [{from: ..., to: ..., layer: ..., parent: '#...'}, ...]
+ * @param {PortGraph} graph The graph.
+ * @returns {Edges[]} A list of edges.
+ */
+export function edges (graph) {
+  return access('edges', graph) || store((graph.edges || [])
+    .map((edge) =>
+      (edge.layer === 'dataflow' &amp;&amp; hasPort(edge.from, graph))
+        ? Edge.setType(Port.type(port(edge.from, graph)), edge)
+        : edge), 'edges', graph)
+}
+
+export const checkEdge = curry((graph, edge) => {
+  var from = node(edge.from, graph)
+  var to = node(edge.to, graph)
+  // TODO: check for edge/ from parent node is not correct anymore.. normEdge.from is a port object. (Same holds for normEdge.to)
+  if (edge.from.node !== '' &amp;&amp; !hasNode(edge.from, graph)) {
+    throw new Error('Cannot create edge connection from not existing node: ' + Port.toString(edge.from) + ' to: ' + Port.toString(edge.to))
+  } else if (edge.to.node !== '' &amp;&amp; !hasNode(edge.to, graph)) {
+    throw new Error('Cannot create edge connection from: ' + Port.toString(edge.from) + ' to not existing node: ' + Port.toString(edge.to))
+  }
+  if (edge.layer === 'dataflow') {
+    if (typeof (edge.from) === 'string' || typeof (edge.to) === 'string') {
+      throw new Error('A normalized edge is expected. No short-fort edges are allowed: ' + JSON.stringify(edge))
+    } else if (Port.equal(edge.from, edge.to)) {
+      throw new Error('Cannot add loops to the port graph from=to=' + Port.toString(edge.from))
+    } else if (!Node.isReference(from) &amp;&amp; !Node.hasPort(edge.from, from)) {
+      throw new Error('The source node "' + Port.node(edge.from) + '" does not have the outgoing port "' + Port.portName(edge.from) + '".')
+    } else if (!Node.isReference(to) &amp;&amp; !Node.hasPort(edge.to, to)) {
+      throw new Error('The target node "' + Port.node(edge.to) + '" does not have the ingoing port "' + Port.portName(edge.to) + '".')
+    } else if (!Node.isReference(from) &amp;&amp; (Node.port(edge.from, from).kind !== ((edge.innerCompoundOutput) ? 'input' : 'output'))) {
+      throw new Error('The source port "' + Port.portName(edge.from) + '" = "' + JSON.stringify(Node.port(edge.from, from)) + '" must be ' +
+      ((edge.innerCompoundOutput)
+      ? 'an inner input port of the compound node ' + edgeParent(edge, graph)
+      : 'an input port') + ' for the edge: ' + JSON.stringify(edge))
+    } else if (!Node.isReference(to) &amp;&amp; (Node.port(edge.to, to).kind !== ((edge.innerCompoundInput) ? 'output' : 'input'))) {
+      throw new Error('The target port "' + Port.portName(edge.to) + '" = "' + JSON.stringify(Node.port(edge.to, to)) + ' must be ' +
+        ((edge.innerCompoundInput)
+        ? 'an inner output port of the compound node ' + edge.parent
+        : 'an input port') + ' for the edge: ' + JSON.stringify(edge))
+    }
+  } else if (!edge.layer) {
+    throw new Error('Edge must have a layer attribute: ' + JSON.stringify(edge))
+  }
+})
+
+function pathsToIDs (edge, graph) {
+  if (edge.query) return edge
+  var from = node(edge.from, graph)
+  var to = node(edge.to, graph)
+  if (edge.layer === 'dataflow') {
+    return merge(edge, {
+      from: {node: Node.id(from)},
+      to: {node: Node.id(to)}
+    })
+  } else {
+    return merge(edge, {from: Node.id(from), to: Node.id(to)})
+  }
+}
+
+function edgeParent (edge, graph) {
+  var parentFrom = Node.path(parent(edge.from, graph))
+  var parentTo = Node.path(parent(edge.to, graph))
+  if (equal(parentFrom, parentTo)) {
+    return parentFrom // = parentTo
+  } else if (equal(Node.path(node(edge.from, graph)), parentTo)) {
+    return parentTo
+  } else if (equal(Node.path(node(edge.to, graph)), parentFrom)) {
+    return parentFrom
+  } else {
+    if (edge.layer !== 'dataflow') {
+      // TODO is there any sensible parent for an arbitrary edge?
+      return parentFrom
+    }
+    throw new Error('Unable to determine parent for the edge:' + JSON.stringify(edge))
+  }
+}
+
+function setInnerCompound (edge, graph) {
+  if (edge.layer !== 'dataflow') return edge
+  var parentFrom = Node.path(parent(edge.from, graph))
+  var parentTo = Node.path(parent(edge.to, graph))
+  var from = Node.path(node(edge.from, graph))
+  var to = Node.path(node(edge.to, graph))
+  if (equal(from, to) &amp;&amp; equal(parentFrom, parentTo)) {
+    return merge(edge, {innerCompoundInput: true, innerCompoundOutput: true})
+  } else if (equal(from, parentTo)) {
+    return merge(edge, {innerCompoundOutput: true})
+  } else if (equal(to, parentFrom)) {
+    return merge(edge, {innerCompoundInput: true})
+  } else if (equal(parentFrom, parentTo)) {
+    return edge
+  } else {
+    throw new Error('Unable to determine parent for the edge:', JSON.stringify(edge))
+  }
+}
+
+function unIDPort (port, inner, graph) {
+  var fromNode = node(port, graph)
+  if (!Number.isNaN(parseInt(Port.portName(port)))) {
+    if (Node.ports(fromNode).length === 0 &amp;&amp; Node.isReference(fromNode)) return port
+    var portId = parseInt(Port.portName(port))
+    var ports = Node[inner ? 'inputPorts' : 'outputPorts'](fromNode, true)
+    if (portId >= ports.length) {
+      throw new Error('Node does not have a ' + portId + '-th port.')
+    }
+    return merge(port, {port: Port.portName(ports[portId])})
+  }
+  return port
+}
+
+function unIDPorts (edge, graph) {
+  return merge(edge, {
+    from: unIDPort(edge.from, edge.innerCompoundOutput, graph),
+    to: unIDPort(edge.to, !edge.innerCompoundInput, graph)})
+}
+
+function normalize (edge, graph) {
+  var normEdge = Edge.normalize(edge)
+  return unIDPorts(setInnerCompound(pathsToIDs(normEdge, graph), graph), graph)
+}
+
+function addEdgeToCompound (edge, graph) {
+  var cs = changeSet.insertEdge(edge)
+  var parent = edgeParent(edge, graph)
+  if (isRoot(parent) || equal(parent, graph.path)) {
+    return changeSet.applyChangeSet(graph, cs)
+  } else {
+    var comp = node(parent, graph)
+    var newComp = changeSet.applyChangeSet(comp, cs)
+    return replaceNode(parent, newComp, graph)
+  }
+}
+
+/**
+ * @function
+ * @name addEdge
+ * @description Add an edge to the graph.
+ * @param {Edge} edge The edge that should be added. This needn't be in standard format.
+ * @param {PortGraph} graph The graph.
+ * @returns {PortGraph} A new graph containing the edge.
+ * @throws {Error} If:
+ *  - the edge already exists
+ *  - ports that the edge connects do not exists
+ *  - nodes that the edge connects do not exists
+ *  - the edge is not in normalizable form.
+ */
+export const addEdge = curry((edge, graph) => {
+  assertGraph(graph, 2, 'addEdge')
+  if (hasEdge(edge, graph)) {
+    throw new Error('Cannot create already existing edge: ' + JSON.stringify(edge))
+  }
+  var normEdge = normalize(edge, graph)
+  checkEdge(graph, normEdge)
+  return addEdgeToCompound(normEdge, graph)
+})
+
+/**
+ * @function
+ * @name removeEdge
+ * @description Remove an edge in the graph
+ * @param {Edge} edge The edge that should be removed. This needn't be in standard format.
+ * @param {PortGraph} graph The graph
+ * @returns {PortGraph} A new graph that does not contain the edge anymore.
+ * @throws {Error} If there is no such edge in the graph.
+ */
+export const removeEdge = curry((edge, graph) => {
+  assertGraph(graph, 2, 'removeEdge')
+  var normEdge = normalize(edge, graph)
+  if (!hasEdge(normEdge, graph)) {
+    throw new Error('Cannot delete edge that is not in the graph.')
+  }
+  var parent = edgeParent(edge, graph)
+  const cs = changeSet.removeEdge(normEdge)
+  if (isRoot(parent) || equal(parent, graph.path)) {
+    return changeSet.applyChangeSet(graph, cs)
+  } else {
+    var comp = node(parent, graph)
+    var newComp = changeSet.applyChangeSet(comp, cs)
+    return replaceNode(parent, newComp, graph)
+  }
+})
+
+function identifies (edge, graph) {
+  assertGraph(graph, 2, 'identifies')
+  if (!edge.query) return Edge.equal(edge)
+  var fromLoc = location(edge.from, graph)
+  var toLoc = location(edge.to, graph)
+  return (cmpEdge) => locIdentifies(fromLoc, node(cmpEdge.from, graph)) &amp;&amp;
+    (!fromLoc.port || fromLoc.port === cmpEdge.from.port) &amp;&amp;
+    locIdentifies(toLoc, node(cmpEdge.to, graph)) &amp;&amp;
+    (!toLoc.port || toLoc.port === cmpEdge.to.port)
+}
+
+function findEdge (edge, graph) {
+  try { // TODO: improve error message when an error is thrown
+    var normEdge = normalize(edge, graph)
+    return find(identifies(normEdge, graph), edgesDeep(graph))
+  } catch (err) {
+    return null
+  }
+}
+
+/**
+ * @function
+ * @name hasEdge
+ * @description Checks whether the graph has the given edge.
+ * @params {Edge} edge The edge to look for. This needn't be in standard format.
+ * @params {PortGraph} graph The graph.
+ * @returns {boolean} True if the edge is contained in the graph, false otherwise.
+ */
+export const hasEdge = curry((edge, graph) => {
+  assertGraph(graph, 2, 'hasEdge')
+  return !!findEdge(edge, graph)
+})
+
+/**
+ * @function
+ * @name edge
+ * @description Returns the queried edge. This needn't be in standard format.
+ * @params {Edge} edge A edge mock that only contains the connecting ports but not necessarily further information.
+ * @params {PortGraph} graph The graph.
+ * @returns {Edge} The edge as it is stored in the graph.
+ * @throws {Error} If the edge is not contained in the graph.
+ */
+export const edge = curry((edge, graph) => {
+  assertGraph(graph, 2, 'edge')
+  var retEdge = findEdge(edge, graph)
+  if (!retEdge) {
+    throw new Error('Edge is not defined in the graph: ' + JSON.stringify(edge))
+  }
+  return retEdge
+})
+
+const realizePort = curry((node, type, port) => {
+  if (Node.equal(Port.node(port), node)) {
+    const pName = Port.portName(port)
+    if (pName === parseInt(pName).toString()) {
+      return Node[type + 'Port'](parseInt(pName), node)
+    }
+  }
+})
+
+function inputType (edge, port) {
+  if (port === 'from' &amp;&amp; !edge.innerCompoundOutput) return 'output'
+  if (port === 'from' &amp;&amp; edge.innerCompoundOutput) return 'input'
+  if (port === 'to' &amp;&amp; !edge.innerCompoundInput) return 'input'
+  if (port === 'to' &amp;&amp; edge.innerCompoundInput) return 'output'
+}
+
+function realizeEdge (edge, node) {
+  if (edge.layer === 'dataflow') {
+    return {
+      from: realizePort(node, inputType(edge, 'from'), edge.from),
+      to: realizePort(node, inputType(edge, 'to'), edge.to)
+    }
+  } else {
+    return edge
+  }
+}
+
+/**
+ * @function
+ * @name realizeEdgesForNode
+ * @description This goes through all edges that are connected to the given node and
+ * realizes them, if a node reference was replaced by an actual node. If it was replaced by another
+ * reference nothing will happen.
+ * @example &lt;caption>Where it is used, when modifying graphs.&lt;/caption>
+ * var graph = Graph.flow(
+ *   Graph.addNode({ref: 'a', name: 'a', ports: []}),
+ *   Graph.addNode({ref: 'b', name: 'b', ports: []}),
+ *   Graph.addEdge({from: 'a@0', to: 'b@0'}),
+ *   // the following command will call realizeEdgesForNode
+ *   // it will replace the 0-th port in the edge with the 'outA' port.
+ *   Graph.replaceNode('a', {componentId: 'a', ports: [{port: 'outA', kind: 'input', type: 'generic'}]})
+ *   // the following command will call realizeEdgesForNode
+ *   // it will replace the 0-th port in the edge with the 'outA' port.
+ *   Graph.replaceNode('b', {componentId: 'b', ports: [{port: 'inB', kind: 'input', type: 'generic'}]})
+ * )()
+ * // after this the graph will have an edge {from: 'a@outA', to: 'b@inB'} and not {from: 'a@0', to: 'b@0'} anymore.
+ * @param {Location} loc A location identifier for the node whose edges should be updated.
+ * @param {Portgraph} graph The graph to perform the operation on
+ * @returns {Portgraph} A new graph in which the edges for the given node are realized (if possible).
+ */
+export const realizeEdgesForNode = curry((loc, graph) => {
+  assertGraph(graph, 2, 'realizeEdgesForNode')
+  const nodeElem = node(loc, graph)
+  if (Node.isReference(nodeElem)) return graph
+  const edges = incidents(loc, graph)
+  const cs = edges.map((e) => [e.parent, changeSet.updateEdge(e, realizeEdge(e, nodeElem))])
+  return toPairs(groupBy((a) => a[0], cs))
+    .map((v) => [v[0], v[1].map((i) => i[1])])
+    .reduce((gr, c) => replaceNode(c[0], changeSet.applyChangeSets(node(c[0], gr), c[1]), gr), graph)
+})
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-Algorithm.html">Algorithm</a></li><li><a href="module-Component.html">Component</a></li><li><a href="module-CompoundPath.html">CompoundPath</a></li><li><a href="module-Edge.html">Edge</a></li><li><a href="module-Node.html">Node</a></li><li><a href="module-Port.html">Port</a></li></ul><h3>Global</h3><ul><li><a href="global.html#addComponent">addComponent</a></li><li><a href="global.html#addEdge">addEdge</a></li><li><a href="global.html#addNode">addNode</a></li><li><a href="global.html#addNodeByPath">addNodeByPath</a></li><li><a href="global.html#addNodeIn">addNodeIn</a></li><li><a href="global.html#addNodeTuple">addNodeTuple</a></li><li><a href="global.html#applyChangeSet">applyChangeSet</a></li><li><a href="global.html#applyChangeSetInplace">applyChangeSetInplace</a></li><li><a href="global.html#applyChangeSets">applyChangeSets</a></li><li><a href="global.html#areConnected">areConnected</a></li><li><a href="global.html#atomics">atomics</a></li><li><a href="global.html#blocked">blocked</a></li><li><a href="global.html#childrenOf">childrenOf</a></li><li><a href="global.html#clone">clone</a></li><li><a href="global.html#component">component</a></li><li><a href="global.html#componentIds">componentIds</a></li><li><a href="global.html#components">components</a></li><li><a href="global.html#compound">compound</a></li><li><a href="global.html#compoundify">compoundify</a></li><li><a href="global.html#compounds">compounds</a></li><li><a href="global.html#convertToLambda">convertToLambda</a></li><li><a href="global.html#criticalNodes">criticalNodes</a></li><li><a href="global.html#distribute">distribute</a></li><li><a href="global.html#distributeSequential">distributeSequential</a></li><li><a href="global.html#distributeWith">distributeWith</a></li><li><a href="global.html#edge">edge</a></li><li><a href="global.html#edges">edges</a></li><li><a href="global.html#edgesDeep">edgesDeep</a></li><li><a href="global.html#empty">empty</a></li><li><a href="global.html#excludeNode">excludeNode</a></li><li><a href="global.html#flow">flow</a></li><li><a href="global.html#flowCallback">flowCallback</a></li><li><a href="global.html#fromFile">fromFile</a></li><li><a href="global.html#fromJSON">fromJSON</a></li><li><a href="global.html#fromJSONUnsafe">fromJSONUnsafe</a></li><li><a href="global.html#fromString">fromString</a></li><li><a href="global.html#get">get</a></li><li><a href="global.html#getMetaKey">getMetaKey</a></li><li><a href="global.html#getNodeMetaKey">getNodeMetaKey</a></li><li><a href="global.html#hasComponent">hasComponent</a></li><li><a href="global.html#hasEdge">hasEdge</a></li><li><a href="global.html#hasNode">hasNode</a></li><li><a href="global.html#identifies">identifies</a></li><li><a href="global.html#idToPath">idToPath</a></li><li><a href="global.html#incidents">incidents</a></li><li><a href="global.html#includePredecessor">includePredecessor</a></li><li><a href="global.html#inIncident">inIncident</a></li><li><a href="global.html#inIncidents">inIncidents</a></li><li><a href="global.html#insertComponent">insertComponent</a></li><li><a href="global.html#insertEdge">insertEdge</a></li><li><a href="global.html#insertNode">insertNode</a></li><li><a href="global.html#isChangeSet">isChangeSet</a></li><li><a href="global.html#isFrom">isFrom</a></li><li><a href="global.html#isomorph">isomorph</a></li><li><a href="global.html#isPortNotation">isPortNotation</a></li><li><a href="global.html#Let">Let</a></li><li><a href="global.html#location">location</a></li><li><a href="global.html#lowestCommonAncestors">lowestCommonAncestors</a></li><li><a href="global.html#mergeNodes">mergeNodes</a></li><li><a href="global.html#meta">meta</a></li><li><a href="global.html#namedFlow">namedFlow</a></li><li><a href="global.html#node">node</a></li><li><a href="global.html#nodeBy">nodeBy</a></li><li><a href="global.html#nodeByPath">nodeByPath</a></li><li><a href="global.html#nodeNames">nodeNames</a></li><li><a href="global.html#nodes">nodes</a></li><li><a href="global.html#nodesBy">nodesBy</a></li><li><a href="global.html#nodesDeep">nodesDeep</a></li><li><a href="global.html#nodesDeepBy">nodesDeepBy</a></li><li><a href="global.html#outIncidents">outIncidents</a></li><li><a href="global.html#parent">parent</a></li><li><a href="global.html#parseCompoundPath">parseCompoundPath</a></li><li><a href="global.html#pointsTo">pointsTo</a></li><li><a href="global.html#port">port</a></li><li><a href="global.html#predecessor">predecessor</a></li><li><a href="global.html#predecessorNode">predecessorNode</a></li><li><a href="global.html#predecessorPort">predecessorPort</a></li><li><a href="global.html#predecessors">predecessors</a></li><li><a href="global.html#predecessorsNode">predecessorsNode</a></li><li><a href="global.html#predecessorsNodePort">predecessorsNodePort</a></li><li><a href="global.html#predecessorsPort">predecessorsPort</a></li><li><a href="global.html#predecessorsUntil">predecessorsUntil</a></li><li><a href="global.html#predecessorsUpTo">predecessorsUpTo</a></li><li><a href="global.html#query">query</a></li><li><a href="global.html#realizeEdgesForNode">realizeEdgesForNode</a></li><li><a href="global.html#references">references</a></li><li><a href="global.html#removeComponent">removeComponent</a></li><li><a href="global.html#removeEdge">removeEdge</a></li><li><a href="global.html#removeMetaKey">removeMetaKey</a></li><li><a href="global.html#removeNode">removeNode</a></li><li><a href="global.html#removeNodeMetaKey">removeNodeMetaKey</a></li><li><a href="global.html#rePath">rePath</a></li><li><a href="global.html#replaceByCall">replaceByCall</a></li><li><a href="global.html#replaceByThunk">replaceByThunk</a></li><li><a href="global.html#replaceNode">replaceNode</a></li><li><a href="global.html#replacePort">replacePort</a></li><li><a href="global.html#sameParents">sameParents</a></li><li><a href="global.html#sameParentsNodes">sameParentsNodes</a></li><li><a href="global.html#sequential">sequential</a></li><li><a href="global.html#set">set</a></li><li><a href="global.html#setMeta">setMeta</a></li><li><a href="global.html#setMetaKey">setMetaKey</a></li><li><a href="global.html#setNode">setNode</a></li><li><a href="global.html#setNodeMeta">setNodeMeta</a></li><li><a href="global.html#setNodeMetaKey">setNodeMetaKey</a></li><li><a href="global.html#setPortName">setPortName</a></li><li><a href="global.html#successors">successors</a></li><li><a href="global.html#successorsNode">successorsNode</a></li><li><a href="global.html#successorsPort">successorsPort</a></li><li><a href="global.html#toJSON">toJSON</a></li><li><a href="global.html#unCompound">unCompound</a></li><li><a href="global.html#updateComponent">updateComponent</a></li><li><a href="global.html#updateEdge">updateEdge</a></li><li><a href="global.html#updateMetaKey">updateMetaKey</a></li><li><a href="global.html#updateNode">updateNode</a></li><li><a href="global.html#updateNodeMetaKey">updateNodeMetaKey</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.3</a> on Thu Jun 29 2017 17:41:13 GMT+0200 (CEST)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: graph/connections.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: graph/connections.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import find from 'lodash/fp/find'
+import map from 'lodash/fp/map'
+import curry from 'lodash/fp/curry'
+import merge from 'lodash/fp/merge'
+import * as Edge from '../edge'
+import { edgesDeep, edges } from './edge'
+import { query } from '../location'
+import { node, port, hasPort, parent } from '../graph/node'
+import { kind } from '../port'
+import { access, store } from './internal'
+
+const nameNode = (op, node) => {
+  if (typeof (node) === 'string') return op + '.' + node
+  else if (node.id) return op + '.' + node.id
+  else throw new Error('Cannot access cache for invalid node query: ' + node)
+}
+
+const namePort = (op, port) => {
+  if (typeof (port) === 'string') return op + '.' + port
+  else if (port.node &amp;&amp; port.port) return op + '.' + port.port + '@' + port.node
+  else throw new Error('Cannot access cache for invalid port query:' + port)
+}
+
+/**
+ * @function
+ * @name pointsTo
+ * @description Checks whether an edge points to a given target.
+ * @param {Location} target The target the edge should point to. This can either be a node or a port.
+ * @param {PortGraph} graph The graph
+ * @param {Edge} edge The edge to check
+ * @returns {boolean} True if the edge points to the target, false otherwise.
+ */
+export const pointsTo = curry((target, graph, edge) => {
+  try {
+    if (edge.to.node) {
+      if (target.id) return target.id === edge.to.node
+      if (typeof (target) === 'string' &amp;&amp; target[0] === '#') return edge.to.node === target
+    }
+    if (typeof (edge.to) === 'string') {
+      if (target.id) return target.id === edge.to
+      if (typeof (target) === 'string' &amp;&amp; target[0] === '#') return edge.to === target
+    }
+    var q = query(target, graph)
+    if (typeof (edge.to) === 'string') {
+      return q(node(edge.to, graph))
+    }
+    return q(merge(edge.to, {additionalInfo: node(edge.to, graph)}))
+  } catch (err) {
+    return false
+  }
+})
+
+/**
+ * @function
+ * @name isFrom
+ * @description Checks whether an edge is from a given source.
+ * @param {Location} target The source the edge should come from. This can either be a node or a port.
+ * @param {PortGraph} graph The graph
+ * @param {Edge} edge The edge to check
+ * @returns {boolean} True if the edge comes from the source, false otherwise.
+ */
+export const isFrom = curry((source, graph, edge) => {
+  try {
+    if (edge.from.node) {
+      if (source.id) return source.id === edge.from.node
+      if (typeof (source) === 'string' &amp;&amp; source[0] === '#') return edge.from.node === source
+    }
+    if (typeof (edge.from) === 'string') {
+      if (source.id) return source.id === edge.from
+      if (typeof (source) === 'string' &amp;&amp; source[0] === '#') return edge.from === source
+    }
+    var q = query(source, graph)
+    if (typeof (edge.from) === 'string') {
+      return q(node(edge.from, graph))
+    }
+    return q(merge(edge.from, {additionalInfo: node(edge.from, graph)}))
+  } catch (err) {
+    return false
+  }
+})
+
+/**
+ * Checks whether the two nodes or ports are connected via an edge.
+ * @param {Location} nodeFrom The starting point of our connection.
+ * @param {Location} nodeTo The target of our connection.
+ * @param {PortGraph} graph The graph in which we want to find the connection.
+ * @returns {boolean} True if the graph has an edge going from "nodeFrom" to "nodeTo".
+ */
+export function areConnected (nodeFrom, nodeTo, graph) {
+  return !!find((e) => isFrom(nodeFrom, graph, e) &amp;&amp; pointsTo(nodeTo, graph, e), edgesDeep(graph))
+}
+
+/**
+ * Returns a list of predecessors for a node or a port. Each node can only have exactly one
+ * predecessor for every port but this function always returns a list.
+ * @param {Location} target The target to which the predecessors point.
+ * @param {PortGraph} graph The graph.
+ * @param {Object} [config] Optional config object
+ * @param {String[]} [config.layers=['dataflow']] Filter the edge based on the selected layers
+ * @param {Boolean} [config.goIntoCompounds=false] Optional argument that activates looking for edges inside compounds.
+ * If you specify a node as the location it will not go inside the node (if it is a compound) and look for
+ * predecessors inside the compound.
+ * @returns {Port[]} A list of ports with that are predecessors of `target`
+ */
+export function predecessors (target, graph, config = { layers: ['dataflow'], goIntoCompounds: false }) {
+  return map('from')(inIncidents(target, graph, config))
+}
+
+/**
+ * Returns the predecessors for a node or a port. Each node can only have exactly one
+ * predecessor for every port.
+ * @param {Location} target The target to which the predecessors points.
+ * @param {PortGraph} graph The graph.
+ * @param {Object} [config] Optional config object
+ * @param {String[]} [config.layers=['dataflow']] Filter the edge based on the selected layers
+ * @param {Boolean} [config.goIntoCompounds=false] Optional argument that activates looking for edges inside compounds.
+ * If you specify a node as the location it will not go inside the node (if it is a compound) and look for
+ * a predecessor inside the compound.
+ * @returns {Port} The preceeding port
+ */
+export function predecessor (target, graph, config = { layers: ['dataflow'], goIntoCompounds: false }) {
+  return predecessors(target, graph, config)[0]
+}
+
+/**
+ * Get the dataflow predecessor of a node in the graph. This method works in O(1) when the cache is initialized.
+ * @param {Port|String} source The target port as an ID or a node object.
+ * @param {PortGraph} graph The graph
+ * @returns {Port[]} The ports that preceedes the node.
+ */
+export function predecessorPort (targetPort, graph) {
+  const name = namePort('predecessorPort', targetPort)
+  return access(name, graph) || store(predecessor(targetPort, graph), name, graph)
+}
+
+/**
+ * Get the dataflow predecessor of a node in the graph. This method works in O(1) when the cache is initialized.
+ * @param {Node|String} source The target node as an ID or a node object.
+ * @param {PortGraph} graph The graph
+ * @returns {Port[]} The ports that preceedes the node.
+ */
+export function predecessorNode (targetNode, graph) {
+  const name = nameNode('predecessorNode', targetNode)
+  return access(name, graph) || store(predecessor(targetNode, graph), name, graph)
+}
+
+/**
+ * Get the dataflow predecessors of a node in the graph. This method works in O(1) when the cache is initialized.
+ * @param {Port|String} source The target port as an ID or a node object.
+ * @param {PortGraph} graph The graph
+ * @returns {Port[]} A list of ports that preceedes the node.
+ */
+export function predecessorsPort (targetPort, graph) {
+  const name = namePort('predecessorsPort', targetPort)
+  return access(name, graph) || store(predecessors(targetPort, graph), name, graph)
+}
+
+/**
+ * Get the dataflow predecessors of a node in the graph. This method works in O(1) when the cache is initialized.
+ * @param {Port|String} source The target port as an ID or a node object.
+ * @param {PortGraph} graph The graph
+ * @returns {Port[]} A list of ports that preceedes the node.
+ */
+export function predecessorsNodePort (target, graph) {
+  if (target.id) return predecessorsNode(target, graph)
+  if (target.port &amp;&amp; target.node) return predecessorsPort(target, graph)
+  if (typeof (target) === 'string') {
+    if (target[0] === '#') return predecessorsNode(target, graph)
+    else if (target.indexOf('@') !== -1) return predecessorsPort(target, graph)
+    else return predecessors(target, graph)
+  }
+  throw new Error('PredecessorNodePort only works for nodes or ports. Given input: ' + JSON.stringify(target))
+}
+
+/**
+ * Get the dataflow predecessors of a node in the graph. This method works in O(1) when the cache is initialized.
+ * @param {Node|String} source The target node as an ID or a node object.
+ * @param {PortGraph} graph The graph
+ * @returns {Port[]} A list of ports that preceedes the node.
+ */
+export function predecessorsNode (targetNode, graph) {
+  const name = nameNode('predecessorsNode', targetNode)
+  return access(name, graph) || store(predecessors(targetNode, graph), name, graph)
+}
+
+/**
+ * Gets all ingoing incident edges to a port
+ * @param {Location} target The port to which the edges are incident. This is the target node or port of each edge.
+ * @param {PortGraph} graph The graph
+ * @param {Object} [config] Optional config object
+ * @param {String[]} [config.layers=['dataflow']] Filter the edge based on the selected layers
+ * @param {Boolean} [config.goIntoCompounds=false] Optional argument that activates looking for edges inside compounds.
+ * If you specify a node as the location it will not go inside the node (if it is a compound) and look for
+ * ingoing edges inside the compound.
+ * @returns {Edge[]} An array of all ingoing (i.e. pointsTo(port)) incident edges.
+ */
+export function inIncidents (target, graph, { layers = ['dataflow'], goIntoCompounds = false } = {}) {
+  const filterFn = (e) => pointsTo(target, graph, e) &amp;&amp; layers.some(l => l === e.layer) &amp;&amp;
+      (Edge.isBetweenPorts(e) || e.layer !== 'dataflow') &amp;&amp;
+      (e.layer !== 'dataflow' || goIntoCompounds || hasPort(target, graph) || kind(port(e.to, graph)) === 'input')
+  if (layers.length === 1 &amp;&amp; layers[0] === 'dataflow' &amp;&amp; !goIntoCompounds) {
+    const n = node(target, graph)
+    if (hasPort(target, graph)) {
+      const p = port(target, graph)
+      if (p.node === n.id &amp;&amp; kind(p) === 'output') {
+        return edges(n).filter(filterFn)
+      }
+    }
+    return edges(parent(n, graph) || graph).filter(filterFn)
+  }
+  return edgesDeep(graph).filter(filterFn)
+}
+
+/**
+ * Gets the ingoing incident edge to a port. Each port can only have one ingoing edge.
+ * @param {Location} target The node or port to which the edge is incident. This is the target node or port of the edge.
+ * @param {PortGraph} graph The graph
+ * @param {Object} [config] Optional config object
+ * @param {String[]} [config.layers=['dataflow']] Filter the edge based on the selected layers
+ * @param {Boolean} [config.goIntoCompounds=false] Optional argument that activates looking for edges inside compounds.
+ * If you specify a node as the location it will not go inside the node (if it is a compound) and look for
+ * ingoing edges inside the compound.
+ * @returns {Edge} The ingoing incident edge.
+ */
+export function inIncident (target, graph, config = { layers: ['dataflow'], goIntoCompounds: false }) {
+  return inIncidents(target, graph, config)[0]
+}
+
+/**
+ * Gets all outgoing incident edges to a port. The given port or node is the source of each edge.
+ * @param {Location} source The port from which the edge comes. This is the source node or port of the edge.
+ * @param {PortGraph} graph The graph
+ * @param {Object} [config] Optional config object
+ * @param {String[]} [config.layers=['dataflow']] Filter the edge based on the selected layers
+ * @param {Boolean} [config.goIntoCompounds=false] Optional argument that activates looking for edges inside compounds.
+ * If you specify a node as the location it will not go inside the node (if it is a compound) and look for
+ * outgoing edges inside the compound.
+ * @returns {Edge[]} An array of all outgoing (i.e. isFrom(port)) incident edges.
+ */
+export function outIncidents (source, graph, { layers = ['dataflow'], goIntoCompounds = false } = {}) {
+  const filterFn = (e) => {
+    return isFrom(source, graph, e) &amp;&amp; layers.some(l => l === e.layer) &amp;&amp; (Edge.isBetweenPorts(e) || e.layer !== 'dataflow') &amp;&amp;
+      (e.layer !== 'dataflow' || goIntoCompounds || hasPort(source, graph) || kind(port(e.from, graph)) === 'output')
+  }
+  if (layers.length === 1 &amp;&amp; layers[0] === 'dataflow' &amp;&amp; !goIntoCompounds) {
+    const n = node(source, graph)
+    if (hasPort(source, graph)) {
+      const p = port(source, graph)
+      if (p.node === n.id &amp;&amp; kind(p) === 'input') {
+        return edges(n).filter(filterFn)
+      }
+    }
+    const e = edges(parent(n, graph) || graph).filter(filterFn)
+    return e
+  }
+  return edgesDeep(graph).filter(filterFn)
+}
+
+/**
+ * Get the successors of one node in the graph, optionally for a specific port.
+ * @param {Location} source The source from which to follow the edges.
+ * @param {PortGraph} graph The graph.
+ * @param {Object} [config] Optional config object
+ * @param {String[]} [config.layers=['dataflow']] Filter the edge based on the selected layers
+ * @param {Boolean} [config.goIntoCompounds=false] Optional argument that activates looking for edges inside compounds.
+ * If you specify a node as the location it will not go inside the node (if it is a compound) and look for
+ * successors inside the compound.
+ * @returns {Port[]} A list of ports that succeed the node.
+ */
+export function successors (source, graph, config = { layers: ['dataflow'], goIntoCompounds: false }) {
+  return map('to')(outIncidents(source, graph, config))
+}
+
+/**
+ * Get the dataflow successor of a node in the graph. This method works in O(1) when the cache is initialized.
+ * @param {Port|String} source The target port as an ID or a node object.
+ * @param {PortGraph} graph The graph
+ * @returns {Port[]} A list of ports that succeed the node.
+ */
+export function successorsPort (targetPort, graph) {
+  const name = namePort('successorsPort', targetPort)
+  return access(name, graph) || store(successors(targetPort, graph), name, graph)
+}
+
+function updateArray (name, value, graph) {
+  var v = access(name, graph)
+  if (v) {
+    store(v.push(value), name, graph)
+  } else {
+    store([value], name, graph)
+  }
+}
+
+export function cacheConnections (graph) {
+  const edges = edgesDeep(graph)
+  for (const e of edges) {
+    if (e.layer !== 'dataflow') continue
+    updateArray(nameNode('successorsNode', e.from.node), e.to, graph)
+    updateArray(nameNode('predecessorsNode', e.to.node), e.from, graph)
+  }
+}
+
+/**
+ * Get the dataflow successor of a node in the graph. This method works in O(1) when the cache is initialized.
+ * @param {Node|String} source The source node as an ID or a node object.
+ * @param {PortGraph} graph The graph
+ * @returns {Port[]} A list of ports that succeed the node.
+ */
+export function successorsNode (sourceNode, graph) {
+  const name = nameNode('successorsNode', sourceNode)
+  return access(name, graph) || store(successors(sourceNode, graph), name, graph)
+}
+
+function or (fn1, fn2) {
+  return (v) => fn1(v) || fn2(v)
+}
+
+/**
+ * @function
+ * @name incidents
+ * @description All incident edges to the given input.
+ * @param {Location} loc The node or port.
+ * @param {PortGraph} graph The graph
+ * @returns {Edge[]} An array of all incident edges to the given location.
+ */
+export const incidents = curry((loc, graph) => {
+  return edgesDeep(graph).filter(or(isFrom(loc, graph), pointsTo(loc, graph)))
+})
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-Algorithm.html">Algorithm</a></li><li><a href="module-Component.html">Component</a></li><li><a href="module-CompoundPath.html">CompoundPath</a></li><li><a href="module-Edge.html">Edge</a></li><li><a href="module-Node.html">Node</a></li><li><a href="module-Port.html">Port</a></li></ul><h3>Global</h3><ul><li><a href="global.html#addComponent">addComponent</a></li><li><a href="global.html#addEdge">addEdge</a></li><li><a href="global.html#addNode">addNode</a></li><li><a href="global.html#addNodeByPath">addNodeByPath</a></li><li><a href="global.html#addNodeIn">addNodeIn</a></li><li><a href="global.html#addNodeTuple">addNodeTuple</a></li><li><a href="global.html#applyChangeSet">applyChangeSet</a></li><li><a href="global.html#applyChangeSetInplace">applyChangeSetInplace</a></li><li><a href="global.html#applyChangeSets">applyChangeSets</a></li><li><a href="global.html#areConnected">areConnected</a></li><li><a href="global.html#atomics">atomics</a></li><li><a href="global.html#blocked">blocked</a></li><li><a href="global.html#childrenOf">childrenOf</a></li><li><a href="global.html#clone">clone</a></li><li><a href="global.html#component">component</a></li><li><a href="global.html#componentIds">componentIds</a></li><li><a href="global.html#components">components</a></li><li><a href="global.html#compound">compound</a></li><li><a href="global.html#compoundify">compoundify</a></li><li><a href="global.html#compounds">compounds</a></li><li><a href="global.html#convertToLambda">convertToLambda</a></li><li><a href="global.html#criticalNodes">criticalNodes</a></li><li><a href="global.html#distribute">distribute</a></li><li><a href="global.html#distributeSequential">distributeSequential</a></li><li><a href="global.html#distributeWith">distributeWith</a></li><li><a href="global.html#edge">edge</a></li><li><a href="global.html#edges">edges</a></li><li><a href="global.html#edgesDeep">edgesDeep</a></li><li><a href="global.html#empty">empty</a></li><li><a href="global.html#excludeNode">excludeNode</a></li><li><a href="global.html#flow">flow</a></li><li><a href="global.html#flowCallback">flowCallback</a></li><li><a href="global.html#fromFile">fromFile</a></li><li><a href="global.html#fromJSON">fromJSON</a></li><li><a href="global.html#fromJSONUnsafe">fromJSONUnsafe</a></li><li><a href="global.html#fromString">fromString</a></li><li><a href="global.html#get">get</a></li><li><a href="global.html#getMetaKey">getMetaKey</a></li><li><a href="global.html#getNodeMetaKey">getNodeMetaKey</a></li><li><a href="global.html#hasComponent">hasComponent</a></li><li><a href="global.html#hasEdge">hasEdge</a></li><li><a href="global.html#hasNode">hasNode</a></li><li><a href="global.html#identifies">identifies</a></li><li><a href="global.html#idToPath">idToPath</a></li><li><a href="global.html#incidents">incidents</a></li><li><a href="global.html#includePredecessor">includePredecessor</a></li><li><a href="global.html#inIncident">inIncident</a></li><li><a href="global.html#inIncidents">inIncidents</a></li><li><a href="global.html#insertComponent">insertComponent</a></li><li><a href="global.html#insertEdge">insertEdge</a></li><li><a href="global.html#insertNode">insertNode</a></li><li><a href="global.html#isChangeSet">isChangeSet</a></li><li><a href="global.html#isFrom">isFrom</a></li><li><a href="global.html#isomorph">isomorph</a></li><li><a href="global.html#isPortNotation">isPortNotation</a></li><li><a href="global.html#Let">Let</a></li><li><a href="global.html#location">location</a></li><li><a href="global.html#lowestCommonAncestors">lowestCommonAncestors</a></li><li><a href="global.html#mergeNodes">mergeNodes</a></li><li><a href="global.html#meta">meta</a></li><li><a href="global.html#namedFlow">namedFlow</a></li><li><a href="global.html#node">node</a></li><li><a href="global.html#nodeBy">nodeBy</a></li><li><a href="global.html#nodeByPath">nodeByPath</a></li><li><a href="global.html#nodeNames">nodeNames</a></li><li><a href="global.html#nodes">nodes</a></li><li><a href="global.html#nodesBy">nodesBy</a></li><li><a href="global.html#nodesDeep">nodesDeep</a></li><li><a href="global.html#nodesDeepBy">nodesDeepBy</a></li><li><a href="global.html#outIncidents">outIncidents</a></li><li><a href="global.html#parent">parent</a></li><li><a href="global.html#parseCompoundPath">parseCompoundPath</a></li><li><a href="global.html#pointsTo">pointsTo</a></li><li><a href="global.html#port">port</a></li><li><a href="global.html#predecessor">predecessor</a></li><li><a href="global.html#predecessorNode">predecessorNode</a></li><li><a href="global.html#predecessorPort">predecessorPort</a></li><li><a href="global.html#predecessors">predecessors</a></li><li><a href="global.html#predecessorsNode">predecessorsNode</a></li><li><a href="global.html#predecessorsNodePort">predecessorsNodePort</a></li><li><a href="global.html#predecessorsPort">predecessorsPort</a></li><li><a href="global.html#predecessorsUntil">predecessorsUntil</a></li><li><a href="global.html#predecessorsUpTo">predecessorsUpTo</a></li><li><a href="global.html#query">query</a></li><li><a href="global.html#realizeEdgesForNode">realizeEdgesForNode</a></li><li><a href="global.html#references">references</a></li><li><a href="global.html#removeComponent">removeComponent</a></li><li><a href="global.html#removeEdge">removeEdge</a></li><li><a href="global.html#removeMetaKey">removeMetaKey</a></li><li><a href="global.html#removeNode">removeNode</a></li><li><a href="global.html#removeNodeMetaKey">removeNodeMetaKey</a></li><li><a href="global.html#rePath">rePath</a></li><li><a href="global.html#replaceByCall">replaceByCall</a></li><li><a href="global.html#replaceByThunk">replaceByThunk</a></li><li><a href="global.html#replaceNode">replaceNode</a></li><li><a href="global.html#replacePort">replacePort</a></li><li><a href="global.html#sameParents">sameParents</a></li><li><a href="global.html#sameParentsNodes">sameParentsNodes</a></li><li><a href="global.html#sequential">sequential</a></li><li><a href="global.html#set">set</a></li><li><a href="global.html#setMeta">setMeta</a></li><li><a href="global.html#setMetaKey">setMetaKey</a></li><li><a href="global.html#setNode">setNode</a></li><li><a href="global.html#setNodeMeta">setNodeMeta</a></li><li><a href="global.html#setNodeMetaKey">setNodeMetaKey</a></li><li><a href="global.html#setPortName">setPortName</a></li><li><a href="global.html#successors">successors</a></li><li><a href="global.html#successorsNode">successorsNode</a></li><li><a href="global.html#successorsPort">successorsPort</a></li><li><a href="global.html#toJSON">toJSON</a></li><li><a href="global.html#unCompound">unCompound</a></li><li><a href="global.html#updateComponent">updateComponent</a></li><li><a href="global.html#updateEdge">updateEdge</a></li><li><a href="global.html#updateMetaKey">updateMetaKey</a></li><li><a href="global.html#updateNode">updateNode</a></li><li><a href="global.html#updateNodeMetaKey">updateNodeMetaKey</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.3</a> on Thu Jun 29 2017 17:41:13 GMT+0200 (CEST)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

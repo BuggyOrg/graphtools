@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: graph/flow.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: graph/flow.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>
+import flatten from 'lodash/fp/flatten'
+import chunk from 'lodash/fp/chunk'
+import curry from 'lodash/fp/curry'
+import last from 'lodash/fp/last'
+import {empty} from './basic'
+import {debug} from '../debug'
+
+function functionName (fn, options, idx) {
+  if (options &amp;&amp; options.names &amp;&amp; options.names[idx]) return options.names[idx]
+  if (fn.name &amp;&amp; fn.name !== 'wrapper') return fn.name
+}
+
+function functionDescription (fn, options, idx) {
+  if (options &amp;&amp; options.descriptions &amp;&amp; options.descriptions[idx]) return options.descriptions[idx]
+  if (fn.description) return fn.description
+}
+
+function isOptionsObj (arg) {
+  return !Array.isArray(arg) &amp;&amp; typeof (arg) === 'object'
+}
+
+/**
+ * @function
+ * @name flow
+ * @param {Function|Array} ...args An arbitrary number of arguments of that are either functions that
+ * take one argument and return this argument. Or an array of functions that each take an argument and
+ * return one. The functions must be composable.
+ * @returns {Function} A function that takes an object that is fed into the first function in the arguments.
+ */
+export const flow = function () {
+  var args = flatten(arguments)
+  var lastArg = args[args.length - 1]
+  var options
+  if (isOptionsObj(lastArg)) {
+    options = lastArg
+    args = args.slice(0, -1)
+  }
+  var flowName = options &amp;&amp; options.name
+  return (graph) => {
+    if (!graph) {
+      graph = empty()
+    }
+    if (options &amp;&amp; options.inPlace) graph.inplace = true
+    var resGraph = [].reduce.call(args, (obj, fn, idx) => {
+      try {
+        var newGraph = fn(obj.graph, (data, graph) => graph)
+        if (options &amp;&amp; options.debug) debug(newGraph)
+        return {graph: newGraph, store: obj.store}
+      } catch (err) {
+        var fnName = functionName(fn, options, idx)
+        var fnDesc = functionDescription(fn, options, idx)
+        err.message += ' in flow function ' + ((flowName) ? '"' + flowName + '"' : '') + ' (at position: ' + (idx + 1) + ')' +
+          ((fnName) ? ' named ' + fnName : '') +
+          ((fnDesc) ? ' (Description: "' + fnDesc + '")' : '')
+        throw err
+      }
+    }, {graph, store: {}}).graph
+    if (options &amp;&amp; options.inPlace) delete resGraph.inplace
+    return resGraph
+  }
+}
+
+/**
+ * @function
+ * @name Let
+ * @description
+ * Handle the context information of an action in a separate callback. This is especially useful in flow chains
+ * to preserve the monadic structure. This is similar to the monadic let in haskell (in do notations). As let
+ * is already a JS keyword it is written in uppercase.
+ * @param {GraphAction} fn A graph action that might produce some contextual information.
+ * @param {Callback} cb A function that takes a context information and returns a graph action.
+ * @returns {GraphAction} A graph action that takes a graph an produces a new graph.
+ * @example Creating a node and using it in further actions
+ * flow(
+ *   Let(Graph.addNode({...}), (newNode, newGraph) =>
+ *      Graph.addEdge({from: Node.port('x', newNode), to: '@out'})(newGraph))
+ * )(graph)
+ */
+export const Let = (fn, cb, ...rest) => {
+  if (rest.length > 0) throw new Error('Let takes exactly two arguments. If you want to perform multiple actions put them into an array (Graph.Let([...], callback).')
+  return (graph) => {
+    if (Array.isArray(fn)) {
+      var res = []
+      const arrCb = (idx) => (data, cbGraph) => {
+        res[idx] = data
+        return cbGraph
+      }
+      var resGraph = fn.reduce((gr, f, idx) => f(gr, arrCb(idx)), graph)
+      return cb(res, resGraph)
+    }
+    return fn(graph, cb)
+  }
+}
+
+/**
+ * Utility function to get the callback function from an optional callbacks array.
+ * This function should be used to allow for additional, optional arguments in curried functions.
+ * @param cbs The callbacks array (possibly empty).
+ * @returns The callback function for the callbacks array.
+ */
+export function flowCallback (cbs) {
+  if (Array.isArray(cbs) &amp;&amp; typeof (cbs[0]) === 'function') {
+    return last(cbs.filter((cb) => typeof (cb) === 'function'))
+  } else if (typeof (cbs) === 'function') {
+    return cbs
+  }
+  return curry((data, graph, ...cbs) => {
+    if (cbs &amp;&amp; cbs.length > 0) return cbs[0](data, graph)
+    return graph
+  })
+}
+
+export const debugFlow = function () {
+  var lastArg = arguments[arguments.length - 1]
+  if (isOptionsObj(lastArg)) {
+    return flow(...arguments.slice(0, -1), Object.assign(lastArg, {debug: true}))
+  }
+  return flow(...arguments, {debug: true})
+}
+
+/* unsure how to describe it properly... until now ;)
+   only sensible usage scenario seems to be the `distribute`
+*/
+function parallel (fns) {
+  if (fns.length === 0) return flowCallback()
+  return (graph) => fns[0](graph, parallel(fns.slice(1)))
+}
+
+/**
+ * Create a sequence of actions. Each action takes the result of the preceeding action and the current graph.
+ * @param {Array&lt;GraphActions>} fns An array of actions that are applied in sequence to the graph.
+ * @returns {GraphAction} A function that takes a graph and returns a new graph. As with every GraphAction
+ * it is possible to add a callback to the arguments to process the result with context information
+ * @example Adding and removing a node
+ * // in the first action, we specify the contents of the node.
+ * // the second action gets the context information of the addNode (which is the added node)
+ * // and the graph (i.e. it calls `Graph.removeNode(newNode, newGraph)`)
+ * sequential([Graph.addNode({...}), Graph.removeNode])(graph)
+ */
+export function sequential (fns, opt = 0, cb = null) {
+  if (fns.length === 0) return cb || flowCallback()
+  if (typeof (fns[0]) !== 'function') throw new Error('[graphtools-sequential] Argument in sequence at position ' + (opt + 1) + ' is not a callable. Make sure to use curried functions.')
+  return (...args) => {
+    var called = false
+    if (fns.length === 1) called = true
+    var res
+    if (opt === 0) {
+      res = fns[0](args[0], (...innerArgs) => {
+        called = true
+        return sequential(fns.slice(1), opt + 1, args[1])(...innerArgs)
+      })
+      if (typeof (res) === 'function') {
+        throw new Error('[graphtools-sequential] First call in sequential takes only the graph as an parameter. Function awaits more parameter.')
+      }
+    } else {
+      res = fns[0](args[0], args[1], (...innerArgs) => {
+        called = true
+        return sequential(fns.slice(1), opt + 1, cb)(...innerArgs)
+      })
+      if (typeof (res) === 'function') {
+        throw new Error('[graphtools-sequential] Calls in sequential (except the first call) take exactly two parameters, some payload and the graph. Function awaits more parameter than two.')
+      }
+    }
+    if (!called) throw new Error('[graphtools-sequential] Callback function not called in sequence function at position ' + (opt + 1))
+    return res
+  }
+}
+
+/**
+ * @function
+ * @name distributeWith
+ * @description
+ * Distributes an argument over multiple Graph actions. After distributing it calls a reducer function.
+ * @param {Reducer} reducer The reducer function that takes multiple graph actions and creates one action out of them.
+ * This could be the sequential reducer that runs the actions sequentially (after distributing an argument).
+ * @param {Array&lt;GraphActions>} fns An array of actions onto which the given callback argument should be distributed.
+ * @returns {GraphAction} A function that takes a graph and returns a new graph. As with every GraphAction
+ * it is possible to add a callback to the arguments to process the result with context information
+ * @example Connecting a nodes inputs and outputs
+ * // Add a graph (`distributeWith(parallel)` is defined as `distribute`)
+ * Graph.addNode({...}, distributeWith(parallel, [
+ *    (newNode) => Graph.addEdge({from: '@from', to: Node.port('input', newNode)}),
+ *    (newNode) => Graph.addEdge({from: Node.port('output', newNode), to: '@output'})
+ * ])(graph)
+ */
+export const distributeWith = curry((reducer, fns) => {
+  return (data, graph) => {
+    if (!fns.every((f) => typeof (f) === 'function')) {
+      throw new Error('[graphtools-distribute] Function ' + (fns.findIndex((f) => typeof (f) !== 'function') + 1) + ' is no function.')
+    }
+    const newFns = fns.map((f) => f(data))
+    if (!newFns.every((f) => typeof (f) === 'function')) {
+      throw new Error('[graphtools-distribute] Function ' + (newFns.findIndex((f) => typeof (f) !== 'function') + 1) + ' in distribute is not curried.')
+    }
+    return reducer(newFns)(graph)
+  }
+})
+
+/**
+ * @function
+ * @name distribute
+ * @description
+ * Distributes an argument parallel. (Alias for `distributeWith(parallel)`).
+ * @see distributeWith
+ */
+export const distribute = distributeWith(parallel)
+
+/**
+ * @function
+ * @name distributeSequential
+ * @description
+ * Distributes an argument parallel. (Alias for `distributeWith(sequential)`).
+ * @see distributeWith
+ */
+export const distributeSeq = distributeWith(sequential)
+
+/**
+ * @function
+ * @name namedFlow
+ * @deprecated
+ * This function is deprecated. Use `flow` with and set the names via the optional parameter.
+ */
+export const namedFlow = function () {
+  var lastArg = arguments[arguments.length - 1]
+  var args = arguments
+  var options = {}
+  if (isOptionsObj(lastArg)) {
+    options = lastArg
+    args = args.slice(0, -1)
+  }
+  if (args.length % 2 !== 0) {
+    throw new Error('Named flow must have an even number of arguments (and sub arguments) in the form [name, function, name function ...].')
+  }
+  const names = chunk(2, args).map((named) => named[0])
+  const fns = chunk(2, args).map((named) => named[1])
+  return flow(fns, Object.assign(options, {names}))
+}
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-Algorithm.html">Algorithm</a></li><li><a href="module-Component.html">Component</a></li><li><a href="module-CompoundPath.html">CompoundPath</a></li><li><a href="module-Edge.html">Edge</a></li><li><a href="module-Node.html">Node</a></li><li><a href="module-Port.html">Port</a></li></ul><h3>Global</h3><ul><li><a href="global.html#addComponent">addComponent</a></li><li><a href="global.html#addEdge">addEdge</a></li><li><a href="global.html#addNode">addNode</a></li><li><a href="global.html#addNodeByPath">addNodeByPath</a></li><li><a href="global.html#addNodeIn">addNodeIn</a></li><li><a href="global.html#addNodeTuple">addNodeTuple</a></li><li><a href="global.html#applyChangeSet">applyChangeSet</a></li><li><a href="global.html#applyChangeSetInplace">applyChangeSetInplace</a></li><li><a href="global.html#applyChangeSets">applyChangeSets</a></li><li><a href="global.html#areConnected">areConnected</a></li><li><a href="global.html#atomics">atomics</a></li><li><a href="global.html#blocked">blocked</a></li><li><a href="global.html#childrenOf">childrenOf</a></li><li><a href="global.html#clone">clone</a></li><li><a href="global.html#component">component</a></li><li><a href="global.html#componentIds">componentIds</a></li><li><a href="global.html#components">components</a></li><li><a href="global.html#compound">compound</a></li><li><a href="global.html#compoundify">compoundify</a></li><li><a href="global.html#compounds">compounds</a></li><li><a href="global.html#convertToLambda">convertToLambda</a></li><li><a href="global.html#criticalNodes">criticalNodes</a></li><li><a href="global.html#distribute">distribute</a></li><li><a href="global.html#distributeSequential">distributeSequential</a></li><li><a href="global.html#distributeWith">distributeWith</a></li><li><a href="global.html#edge">edge</a></li><li><a href="global.html#edges">edges</a></li><li><a href="global.html#edgesDeep">edgesDeep</a></li><li><a href="global.html#empty">empty</a></li><li><a href="global.html#excludeNode">excludeNode</a></li><li><a href="global.html#flow">flow</a></li><li><a href="global.html#flowCallback">flowCallback</a></li><li><a href="global.html#fromFile">fromFile</a></li><li><a href="global.html#fromJSON">fromJSON</a></li><li><a href="global.html#fromJSONUnsafe">fromJSONUnsafe</a></li><li><a href="global.html#fromString">fromString</a></li><li><a href="global.html#get">get</a></li><li><a href="global.html#getMetaKey">getMetaKey</a></li><li><a href="global.html#getNodeMetaKey">getNodeMetaKey</a></li><li><a href="global.html#hasComponent">hasComponent</a></li><li><a href="global.html#hasEdge">hasEdge</a></li><li><a href="global.html#hasNode">hasNode</a></li><li><a href="global.html#identifies">identifies</a></li><li><a href="global.html#idToPath">idToPath</a></li><li><a href="global.html#incidents">incidents</a></li><li><a href="global.html#includePredecessor">includePredecessor</a></li><li><a href="global.html#inIncident">inIncident</a></li><li><a href="global.html#inIncidents">inIncidents</a></li><li><a href="global.html#insertComponent">insertComponent</a></li><li><a href="global.html#insertEdge">insertEdge</a></li><li><a href="global.html#insertNode">insertNode</a></li><li><a href="global.html#isChangeSet">isChangeSet</a></li><li><a href="global.html#isFrom">isFrom</a></li><li><a href="global.html#isomorph">isomorph</a></li><li><a href="global.html#isPortNotation">isPortNotation</a></li><li><a href="global.html#Let">Let</a></li><li><a href="global.html#location">location</a></li><li><a href="global.html#lowestCommonAncestors">lowestCommonAncestors</a></li><li><a href="global.html#mergeNodes">mergeNodes</a></li><li><a href="global.html#meta">meta</a></li><li><a href="global.html#namedFlow">namedFlow</a></li><li><a href="global.html#node">node</a></li><li><a href="global.html#nodeBy">nodeBy</a></li><li><a href="global.html#nodeByPath">nodeByPath</a></li><li><a href="global.html#nodeNames">nodeNames</a></li><li><a href="global.html#nodes">nodes</a></li><li><a href="global.html#nodesBy">nodesBy</a></li><li><a href="global.html#nodesDeep">nodesDeep</a></li><li><a href="global.html#nodesDeepBy">nodesDeepBy</a></li><li><a href="global.html#outIncidents">outIncidents</a></li><li><a href="global.html#parent">parent</a></li><li><a href="global.html#parseCompoundPath">parseCompoundPath</a></li><li><a href="global.html#pointsTo">pointsTo</a></li><li><a href="global.html#port">port</a></li><li><a href="global.html#predecessor">predecessor</a></li><li><a href="global.html#predecessorNode">predecessorNode</a></li><li><a href="global.html#predecessorPort">predecessorPort</a></li><li><a href="global.html#predecessors">predecessors</a></li><li><a href="global.html#predecessorsNode">predecessorsNode</a></li><li><a href="global.html#predecessorsNodePort">predecessorsNodePort</a></li><li><a href="global.html#predecessorsPort">predecessorsPort</a></li><li><a href="global.html#predecessorsUntil">predecessorsUntil</a></li><li><a href="global.html#predecessorsUpTo">predecessorsUpTo</a></li><li><a href="global.html#query">query</a></li><li><a href="global.html#realizeEdgesForNode">realizeEdgesForNode</a></li><li><a href="global.html#references">references</a></li><li><a href="global.html#removeComponent">removeComponent</a></li><li><a href="global.html#removeEdge">removeEdge</a></li><li><a href="global.html#removeMetaKey">removeMetaKey</a></li><li><a href="global.html#removeNode">removeNode</a></li><li><a href="global.html#removeNodeMetaKey">removeNodeMetaKey</a></li><li><a href="global.html#rePath">rePath</a></li><li><a href="global.html#replaceByCall">replaceByCall</a></li><li><a href="global.html#replaceByThunk">replaceByThunk</a></li><li><a href="global.html#replaceNode">replaceNode</a></li><li><a href="global.html#replacePort">replacePort</a></li><li><a href="global.html#sameParents">sameParents</a></li><li><a href="global.html#sameParentsNodes">sameParentsNodes</a></li><li><a href="global.html#sequential">sequential</a></li><li><a href="global.html#set">set</a></li><li><a href="global.html#setMeta">setMeta</a></li><li><a href="global.html#setMetaKey">setMetaKey</a></li><li><a href="global.html#setNode">setNode</a></li><li><a href="global.html#setNodeMeta">setNodeMeta</a></li><li><a href="global.html#setNodeMetaKey">setNodeMetaKey</a></li><li><a href="global.html#setPortName">setPortName</a></li><li><a href="global.html#successors">successors</a></li><li><a href="global.html#successorsNode">successorsNode</a></li><li><a href="global.html#successorsPort">successorsPort</a></li><li><a href="global.html#toJSON">toJSON</a></li><li><a href="global.html#unCompound">unCompound</a></li><li><a href="global.html#updateComponent">updateComponent</a></li><li><a href="global.html#updateEdge">updateEdge</a></li><li><a href="global.html#updateMetaKey">updateMetaKey</a></li><li><a href="global.html#updateNode">updateNode</a></li><li><a href="global.html#updateNodeMetaKey">updateNodeMetaKey</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.3</a> on Thu Jun 29 2017 17:41:13 GMT+0200 (CEST)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

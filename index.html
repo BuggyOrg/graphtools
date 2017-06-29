@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Home</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Home</h1>
+
+    
+
+
+
+    
+
+
+    <h3>@buggyorg/graphtools 0.4.0-pre.41</h3>
+
+
+
+
+
+
+
+
+
+
+    
+
+
+
+
+    <section>
+        <article><h1>Buggy graphtools <a href="https://travis-ci.org/BuggyOrg/graphtools"><img src="https://travis-ci.org/BuggyOrg/graphtools.svg?branch=master" alt="Build Status"></a> <a href="https://coveralls.io/github/BuggyOrg/graphtools?branch=master"><img src="https://coveralls.io/repos/github/BuggyOrg/graphtools/badge.svg?branch=master" alt="Coverage Status"></a></h1><p>This package contains the graph API for Buggy graphs.</p>
+<h1>Graph structure</h1><p>A graph in Buggy is a directed, multigraph that allows compounds. Compounds are
+subgraphs in a node of the graph itself. You can picture it like this:</p>
+<p><img src="doc/compound.png" alt="A compound node that contains another graph."></p>
+<p>Each node in the graph also has to have at least one port. Ports
+are divided into input (green) and output ports (red). The format
+for a graph is JSON which contains five basic fields:</p>
+<pre class="prettyprint source lang-json"><code>{
+  &quot;nodes&quot;: [
+    {&quot;ref&quot;: &quot;&lt;meta-id>&quot;, &quot;id&quot;: &quot;&lt;some-unique-id>&quot;},
+    {&quot;id&quot;: &quot;&lt;u-id>&quot;, &quot;version&quot;: &quot;&lt;semver-version>&quot;, &quot;componentId&quot;: &quot;&lt;component-id>&quot;,
+     &quot;ports&quot;: [{&quot;port&quot;: &quot;&lt;port-name>&quot;, &quot;kind&quot;: &quot;input|output&quot;, &quot;type&quot;: &quot;number&quot;}],
+     &quot;atomic&quot;: &quot;true&quot;, &quot;metaInformation&quot;: {&quot;some-key&quot;: &quot;some-value&quot;}},
+    {&quot;id&quot;: &quot;&lt;u-id>&quot;, &quot;version&quot;: &quot;&lt;semver-version>&quot;, &quot;atomic&quot;: false,
+     &quot;ports&quot;: [{&quot;port&quot;: &quot;&lt;port-name>&quot;, &quot;kind&quot;: &quot;input|output&quot;, &quot;type&quot;: &quot;number&quot;}],
+     &quot;nodes&quot;: &lt;Sub-Nodes>, &quot;edges&quot;: &lt;Sub-Edges>, &quot;metaInformation&quot;: {&quot;some-key&quot;: &quot;some-value&quot;}},
+  ],
+  &quot;edges&quot;: [
+    {&quot;from&quot;: &quot;&lt;node-id>:&lt;port-name>&quot;, &quot;to&quot;: &quot;&lt;node-id>:&lt;port-name>&quot;, &quot;layer&quot;: &quot;dataflow&quot;}
+  ],
+  &quot;version&quot;: &quot;&lt;semver-version of graph API>&quot;,
+  &quot;components&quot;: [
+    {&quot;componentId&quot;: &quot;&lt;component-id>&quot;, &quot;ports&quot;: [...], &quot;atomic&quot;: true},
+    {&quot;componentId&quot;: &quot;&lt;component-id>&quot;, &quot;ports&quot;: [...], &quot;nodes&quot;: &lt;Sub-Nodes>, &quot;edges&quot;: &lt;Sub-Edges>}
+  ],
+  &quot;metaInformation&quot;: {&quot;some-key&quot;: &quot;some-value&quot;}
+}</code></pre><h1>Usage</h1><pre class="prettyprint source"><code>import * as Graph from '@buggorg/graphtools'
+
+Graph.nodes(graph)
+Graph.Node.id(graph)</code></pre><h2>Locations</h2><p>A key concept in the graphtools are locations. Instead of walking through the graph there is a handy short notation to access most of the important graph elements. Most of the API functions that query something use locations at their core. If a function accepts a location it accepts a range of inputs.</p>
+<h3>Node locations</h3><p>If you query a specific node you can use one of the following:</p>
+<ul>
+<li>The ID of the node (as a string (prefixed) with <code>&quot;#&quot;</code> or as <code>{id: &quot;#...&quot;}</code>). E.g. <code>Graph.node('#123abc', graph)</code>.</li>
+<li>The name of the node like in <code>Graph.node('node-name', graph)</code>. But keep in mind that names are not unique throughout a graph.</li>
+<li>A componentId prefixed with <code>&quot;/&quot;</code>. This can be used to query the first node that is of this kind like in <code>Graph.node('/math/add</code>, graph)<code>. A probably more interesting use case would be</code>Graph.nodesBy('/math/add', graph)' which returns all nodes in the root level of the graph that are a <code>math/add</code> component.</li>
+<li>The node itself. It is always okay to do <code>Graph.node(Graph.node('#id...', graph), graph)</code>. This is usually interesting after updating a node in a graph, like in <code>Graph.setNodeMetaKey('key', 'value', nodeObj, graph)</code> where the <code>nodeObj</code> is the node you were working on.</li>
+<li>A port of the node can be used as a node location. This is especially useful when working with edges. It is possible to do this: <code>Graph.node(edge.from, graph)</code> even though an edge mit start in a port. If the edge starts in a port <code>edge.from</code> will be a port object. But nevertheless it will accept this as a node location.</li>
+</ul>
+<h3>Port Locations</h3><p>In some functions it is interesting to specify a port explicitly. Usually when looking for predecessors or successors. A port location can be:</p>
+<ul>
+<li>The port object itself like in: <code>Graph.successors(edge.from, graph)</code> or <code>Graph.successor(Node.port('output', nobeObj), graph)</code>.</li>
+<li>The short notation like <code>Graph.successor('#node-id@out-port', graph)</code>. (This is not yet implemented / tested).</li>
+</ul>
+<p>Keep in mind that functions like <code>Graph.successors</code> or <code>Graph.incidents</code> also take node locations as their input. In those cases they use all ports of the node to find the successors, incidents etc.</p>
+<h2>JSDoc</h2><p>You can find the JSDoc documentation <a href="https://buggyorg.github.io/graphtools/index.html">here</a></p></article>
+    </section>
+
+
+
+
+
+
+
+
+
+<section>
+
+<header>
+    
+        <h2>changeSet.js</h2>
+        
+    
+</header>
+
+<article>
+    <div class="container-overview">
+    
+        
+            <div class="description"><p>This methods are for internal usage. They do not check for bad inputs and can create broken graphs.
+If you know what you are doing you can include them via <code>import * as ChangeSet from '@buggyorg/graphtools/changeSet'</code>.</p></div>
+        
+
+        
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="changeSet.js.html">changeSet.js</a>, <a href="changeSet.js.html#line1">line 1</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+        
+    
+    </div>
+
+    
+
+    
+
+    
+
+     
+
+    
+
+    
+
+    
+
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+
+
+
+<section>
+
+<header>
+    
+        <h2>graph/basic.js</h2>
+        
+    
+</header>
+
+<article>
+    <div class="container-overview">
+    
+        
+            <div class="description"><p>Includes basic graph functions like creating a graph or cloning it.</p></div>
+        
+
+        
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="graph_basic.js.html">graph/basic.js</a>, <a href="graph_basic.js.html#line1">line 1</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+        
+    
+    </div>
+
+    
+
+    
+
+    
+
+     
+
+    
+
+    
+
+    
+
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+
+
+
+<section>
+
+<header>
+    
+        <h2>graph/internal.js</h2>
+        
+    
+</header>
+
+<article>
+    <div class="container-overview">
+    
+        
+            <div class="description"><p>This methods are for internal usage. They do not check for bad inputs and can create broken graphs.
+If you know what you are doing you can include them via <code>import * as GraphInternals from '@buggyorg/graphtools/graph/internal'</code>.</p></div>
+        
+
+        
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="graph_internal.js.html">graph/internal.js</a>, <a href="graph_internal.js.html#line1">line 1</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+        
+    
+    </div>
+
+    
+
+    
+
+    
+
+     
+
+    
+
+    
+
+    
+
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-Algorithm.html">Algorithm</a></li><li><a href="module-Component.html">Component</a></li><li><a href="module-CompoundPath.html">CompoundPath</a></li><li><a href="module-Edge.html">Edge</a></li><li><a href="module-Node.html">Node</a></li><li><a href="module-Port.html">Port</a></li></ul><h3>Global</h3><ul><li><a href="global.html#addComponent">addComponent</a></li><li><a href="global.html#addEdge">addEdge</a></li><li><a href="global.html#addNode">addNode</a></li><li><a href="global.html#addNodeByPath">addNodeByPath</a></li><li><a href="global.html#addNodeIn">addNodeIn</a></li><li><a href="global.html#addNodeTuple">addNodeTuple</a></li><li><a href="global.html#applyChangeSet">applyChangeSet</a></li><li><a href="global.html#applyChangeSetInplace">applyChangeSetInplace</a></li><li><a href="global.html#applyChangeSets">applyChangeSets</a></li><li><a href="global.html#areConnected">areConnected</a></li><li><a href="global.html#atomics">atomics</a></li><li><a href="global.html#blocked">blocked</a></li><li><a href="global.html#childrenOf">childrenOf</a></li><li><a href="global.html#clone">clone</a></li><li><a href="global.html#component">component</a></li><li><a href="global.html#componentIds">componentIds</a></li><li><a href="global.html#components">components</a></li><li><a href="global.html#compound">compound</a></li><li><a href="global.html#compoundify">compoundify</a></li><li><a href="global.html#compounds">compounds</a></li><li><a href="global.html#convertToLambda">convertToLambda</a></li><li><a href="global.html#criticalNodes">criticalNodes</a></li><li><a href="global.html#distribute">distribute</a></li><li><a href="global.html#distributeSequential">distributeSequential</a></li><li><a href="global.html#distributeWith">distributeWith</a></li><li><a href="global.html#edge">edge</a></li><li><a href="global.html#edges">edges</a></li><li><a href="global.html#edgesDeep">edgesDeep</a></li><li><a href="global.html#empty">empty</a></li><li><a href="global.html#excludeNode">excludeNode</a></li><li><a href="global.html#flow">flow</a></li><li><a href="global.html#flowCallback">flowCallback</a></li><li><a href="global.html#fromFile">fromFile</a></li><li><a href="global.html#fromJSON">fromJSON</a></li><li><a href="global.html#fromJSONUnsafe">fromJSONUnsafe</a></li><li><a href="global.html#fromString">fromString</a></li><li><a href="global.html#get">get</a></li><li><a href="global.html#getMetaKey">getMetaKey</a></li><li><a href="global.html#getNodeMetaKey">getNodeMetaKey</a></li><li><a href="global.html#hasComponent">hasComponent</a></li><li><a href="global.html#hasEdge">hasEdge</a></li><li><a href="global.html#hasNode">hasNode</a></li><li><a href="global.html#identifies">identifies</a></li><li><a href="global.html#idToPath">idToPath</a></li><li><a href="global.html#incidents">incidents</a></li><li><a href="global.html#includePredecessor">includePredecessor</a></li><li><a href="global.html#inIncident">inIncident</a></li><li><a href="global.html#inIncidents">inIncidents</a></li><li><a href="global.html#insertComponent">insertComponent</a></li><li><a href="global.html#insertEdge">insertEdge</a></li><li><a href="global.html#insertNode">insertNode</a></li><li><a href="global.html#isChangeSet">isChangeSet</a></li><li><a href="global.html#isFrom">isFrom</a></li><li><a href="global.html#isomorph">isomorph</a></li><li><a href="global.html#isPortNotation">isPortNotation</a></li><li><a href="global.html#Let">Let</a></li><li><a href="global.html#location">location</a></li><li><a href="global.html#lowestCommonAncestors">lowestCommonAncestors</a></li><li><a href="global.html#mergeNodes">mergeNodes</a></li><li><a href="global.html#meta">meta</a></li><li><a href="global.html#namedFlow">namedFlow</a></li><li><a href="global.html#node">node</a></li><li><a href="global.html#nodeBy">nodeBy</a></li><li><a href="global.html#nodeByPath">nodeByPath</a></li><li><a href="global.html#nodeNames">nodeNames</a></li><li><a href="global.html#nodes">nodes</a></li><li><a href="global.html#nodesBy">nodesBy</a></li><li><a href="global.html#nodesDeep">nodesDeep</a></li><li><a href="global.html#nodesDeepBy">nodesDeepBy</a></li><li><a href="global.html#outIncidents">outIncidents</a></li><li><a href="global.html#parent">parent</a></li><li><a href="global.html#parseCompoundPath">parseCompoundPath</a></li><li><a href="global.html#pointsTo">pointsTo</a></li><li><a href="global.html#port">port</a></li><li><a href="global.html#predecessor">predecessor</a></li><li><a href="global.html#predecessorNode">predecessorNode</a></li><li><a href="global.html#predecessorPort">predecessorPort</a></li><li><a href="global.html#predecessors">predecessors</a></li><li><a href="global.html#predecessorsNode">predecessorsNode</a></li><li><a href="global.html#predecessorsNodePort">predecessorsNodePort</a></li><li><a href="global.html#predecessorsPort">predecessorsPort</a></li><li><a href="global.html#predecessorsUntil">predecessorsUntil</a></li><li><a href="global.html#predecessorsUpTo">predecessorsUpTo</a></li><li><a href="global.html#query">query</a></li><li><a href="global.html#realizeEdgesForNode">realizeEdgesForNode</a></li><li><a href="global.html#references">references</a></li><li><a href="global.html#removeComponent">removeComponent</a></li><li><a href="global.html#removeEdge">removeEdge</a></li><li><a href="global.html#removeMetaKey">removeMetaKey</a></li><li><a href="global.html#removeNode">removeNode</a></li><li><a href="global.html#removeNodeMetaKey">removeNodeMetaKey</a></li><li><a href="global.html#rePath">rePath</a></li><li><a href="global.html#replaceByCall">replaceByCall</a></li><li><a href="global.html#replaceByThunk">replaceByThunk</a></li><li><a href="global.html#replaceNode">replaceNode</a></li><li><a href="global.html#replacePort">replacePort</a></li><li><a href="global.html#sameParents">sameParents</a></li><li><a href="global.html#sameParentsNodes">sameParentsNodes</a></li><li><a href="global.html#sequential">sequential</a></li><li><a href="global.html#set">set</a></li><li><a href="global.html#setMeta">setMeta</a></li><li><a href="global.html#setMetaKey">setMetaKey</a></li><li><a href="global.html#setNode">setNode</a></li><li><a href="global.html#setNodeMeta">setNodeMeta</a></li><li><a href="global.html#setNodeMetaKey">setNodeMetaKey</a></li><li><a href="global.html#setPortName">setPortName</a></li><li><a href="global.html#successors">successors</a></li><li><a href="global.html#successorsNode">successorsNode</a></li><li><a href="global.html#successorsPort">successorsPort</a></li><li><a href="global.html#toJSON">toJSON</a></li><li><a href="global.html#unCompound">unCompound</a></li><li><a href="global.html#updateComponent">updateComponent</a></li><li><a href="global.html#updateEdge">updateEdge</a></li><li><a href="global.html#updateMetaKey">updateMetaKey</a></li><li><a href="global.html#updateNode">updateNode</a></li><li><a href="global.html#updateNodeMetaKey">updateNodeMetaKey</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.3</a> on Thu Jun 29 2017 17:41:13 GMT+0200 (CEST)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>
