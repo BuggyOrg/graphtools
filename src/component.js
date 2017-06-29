@@ -24,7 +24,7 @@ import merge from 'lodash/fp/merge'
 import _ from 'lodash'
 import * as Port from './port'
 import {children, isCompound} from './compound'
-import {create, id as nodeID} from './node'
+import {create, id as nodeID, hasChildren} from './node'
 import semver from 'semver'
 import isEqual from 'lodash/fp/isEqual'
 
@@ -175,7 +175,7 @@ const mapEdgeIDs = curry((map, edge) => {
  * @returns {Node} A node with the given name representing the component.
  */
 export function createNode (reference, comp) {
-  if (isCompound(comp)) {
+  if (hasChildren(comp)) {
     const storeID = (n) => { n.__id = n.id; return n }
     const remStoredID = (n) => { delete n.__id; return n }
     const newNodes = children(comp)

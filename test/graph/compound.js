@@ -8,6 +8,8 @@ import {port} from '../../src/port'
 import _ from 'lodash'
 import semver from 'semver'
 
+import cloneDeep from 'lodash/fp/cloneDeep'
+
 var expect = chai.expect
 
 const toNames = (graph) => (id) => Node.name(Graph.node(id, graph))
@@ -332,10 +334,31 @@ describe('Basic graph functions', () => {
       const parent = Graph.parent(qnode, qsort)
       const newGraph = Graph.flow(
         Graph.removeNode(qnode),
-        Graph.addNodeIn(parent, qnode)
+        Graph.addNodeIn(parent, cloneDeep(qnode))
       )(qsort)
       expect(Graph.successors('/partition-right', newGraph, {goIntoCompounds: true})).to.have.length(3)
       expect(Graph.successors('/partition-left', newGraph, {goIntoCompounds: true})).to.have.length(3)
+    })
+
+    it('Replaces IDs of lambdas correctly', function () {
+      this.timeout(15000)
+      const qsort = Graph.fromFile('./test/fixtures/qsort.json')
+
+      const qnode = Graph.node('/quicksort', qsort)
+      const parent = Graph.parent(qnode, qsort)
+      const newGraph = Graph.flow(
+        Graph.removeNode(qnode),
+        Graph.Let(Graph.addNodeIn(parent, cloneDeep(qnode)), (newNode, g) => {
+          return Graph.addNodeIn(newNode, qnode, g)
+        })
+      )(qsort)
+      const lambdas = Graph.nodesDeepBy(n => n.componentId === 'functional/lambda', newGraph)
+      expect(lambdas).to.have.length(6)
+      const impls = lambdas.map(l => l.nodes[0])
+      const outs = _.flatten(impls.map(l => Graph.successors(Node.ports(l)[0], newGraph)))
+      expect(outs).to.have.length(6)
+      const ids = impls.map(l => l.id)
+      expect(_.uniq(ids)).to.have.length(6)
     })
   })
 })
