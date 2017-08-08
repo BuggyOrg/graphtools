@@ -1,6 +1,7 @@
 
 import curry from 'lodash/fp/curry'
 import * as Graph from '../graph'
+import {debug} from '../debug'
 import setOps from 'set-ops'
 import * as Node from '../node'
 import {isPort} from '../port'
@@ -51,13 +52,10 @@ export const lowestCommonAncestors = curry((locations, graph) => {
   const allNodes = new Set(Graph.nodes(Graph.parent(locations[0], graph)).map(Node.id))
   const commonAncestors = locationAncestors.reduce(intersection, allNodes)
   for (const node of commonAncestors) {
-    for (const successor of Graph.successors(node, graph)) {
-      if (commonAncestors.has(successor.node) && commonAncestors.delete(node)) {
-        break
-      }
+    if (Graph.successors(node, graph).every(successor => commonAncestors.has(successor.node))) {
+      commonAncestors.delete(node)
     }
   }
-
   if (commonAncestors.size === 0) return [Graph.parent(locations[0], graph)]
   return Array.from(commonAncestors).map((id) => Graph.node(id, graph))
 })

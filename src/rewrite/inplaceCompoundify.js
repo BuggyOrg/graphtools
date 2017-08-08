@@ -23,7 +23,12 @@ export default function compoundify (parentLoc, subsetIn, graph, ...cbs) {
   const nonSubSucc = flatten(subset.map((n) => Graph.successorsNode(n, graph))).map((n) => n.node).filter((nId) => !subsetSet.has(nId))
   const i = (intersection(new Set(nonSubPred), new Set(nonSubSucc)))
   if (i.size !== 0) {
-    throw new Error('Cannot compoundify subset: "' + subset + '". It would form a loop with: "' + Array.from(i) + '"')
+    Graph.debug(
+      Graph.flow(
+        subset.map((n) => Graph.setNodeMetaKey('style.color', 'red', n))
+      )(graph)
+    )
+    throw new Error('Cannot compoundify subset: "' + subset + '". It would form a loop with: "' + Array.from(i) + '" (Use debug-graphs to see the subset)')
   }
   const edges = Graph.edges(parent).filter((e) => e.layer === 'dataflow')
   var innerE = []
