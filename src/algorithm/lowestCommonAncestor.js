@@ -1,7 +1,6 @@
 
 import curry from 'lodash/fp/curry'
 import * as Graph from '../graph'
-import {debug} from '../debug'
 import setOps from 'set-ops'
 import * as Node from '../node'
 import {isPort} from '../port'

@@ -120,5 +120,43 @@ describe('Graph Algorithms', () => {
       expect(lcas).to.have.length(1)
       expect(lcas[0].componentId).to.equal('fac')
     })
+
+    it('» Includes LCA nodes that have some common nodes as successors but not all', () => {
+// cheating ascii graphs ;)
+` C = Common nodes, NC = non common nodes, SRC = LCA source node
++---+
+| C |
+++-++
+ | +-------+
+ |       +-v-+
+ |       | C |
+ |       ++-++
+ | +------+ |
+ | |        |
++v-v+       |
+|NC |       |
++---+       |
+  +-+ +-----+
+    | |
+   +v-v+
+   |SRC|
+   +---+
+
+`
+      const g = Graph.flow(
+        Graph.addNode({componentId: 'C1', name: 'C1', ports: [{kind: 'output', port: 'o1', type: 'A'}, {kind: 'output', port: 'o2', type: 'A'}]}),
+        Graph.addNode({componentId: 'NC', name: 'NC', ports: [{kind: 'input', port: 'i1', type: 'A'}, {kind: 'input', port: 'i2', type: 'A'}, {kind: 'output', port: 'o1', type: 'A'}]}),
+        Graph.addNode({componentId: 'C2', name: 'C2', ports: [{kind: 'input', port: 'i1', type: 'A'}, {kind: 'output', port: 'o1', type: 'A'}, {kind: 'output', port: 'o2', type: 'A'}]}),
+        Graph.addNode({componentId: 'SRC', name: 'SRC', ports: [{kind: 'input', port: 'i1', type: 'A'}, {kind: 'input', port: 'i2', type: 'A'}]}),
+        Graph.addEdge({from: 'C1@o1', to: 'NC@i1'}),
+        Graph.addEdge({from: 'C1@o2', to: 'C2@i1'}),
+        Graph.addEdge({from: 'C2@o2', to: 'NC@i2'}),
+        Graph.addEdge({from: 'NC@o1', to: 'SRC@i1'}),
+        Graph.addEdge({from: 'C2@o1', to: 'SRC@i2'})
+      )()
+      const src = Graph.node('/SRC', g)
+      const lcas = Algorithms.lowestCommonAncestors([Node.port('i1', src), Node.port('i2', src)], g)
+      expect(lcas).to.have.length(2)
+    })
   })
 })
