@@ -49,7 +49,7 @@ export const lowestCommonAncestors = curry((locations, graph) => {
   // We only look for the nodes inside the compound and not the whole graph.
   const locationAncestors = locations.map((l) => ancestors(l, graph))
   const allNodes = new Set(Graph.nodes(Graph.parent(locations[0], graph)).map(Node.id))
-  const commonAncestors = locationAncestors.reduce(intersection, allNodes)
+  const commonAncestors = intersection(...locationAncestors, allNodes)
   for (const node of commonAncestors) {
     if (Graph.successors(node, graph).every(successor => commonAncestors.has(successor.node))) {
       commonAncestors.delete(node)
