@@ -47,7 +47,7 @@ export const lowestCommonAncestors = curry((locations, graph) => {
   // according to Bender et al. 2005 the lowest common ancestors of a graph are the common ancestors
   // of out-degree zero in the subgraph of the graph induced by the set of common ancestors.
   // We only look for the nodes inside the compound and not the whole graph.
-  const locationAncestors = locations.map((l) => ancestors(l, graph))
+  const locationAncestors = locations.map((l) => new Set(ancestors(l, graph)))
   const allNodes = new Set(Graph.nodes(Graph.parent(locations[0], graph)).map(Node.id))
   const commonAncestors = intersection(...locationAncestors, allNodes)
   for (const node of commonAncestors) {
